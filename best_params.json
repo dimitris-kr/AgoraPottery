@@ -1,0 +1,804 @@
+{
+  "Ridge": {
+    "('tfidf', 'StartYear')": {
+      "alpha": 1,
+      "random_state": 42
+    },
+    "('bert', 'StartYear')": {
+      "alpha": 10,
+      "random_state": 42
+    },
+    "('cannyhog', 'StartYear')": {
+      "alpha": 1,
+      "random_state": 42
+    },
+    "('resnet', 'StartYear')": {
+      "alpha": 10,
+      "random_state": 42
+    },
+    "('vit', 'StartYear')": {
+      "alpha": 1,
+      "random_state": 42
+    },
+    "('tfidf + cannyhog', 'StartYear')": {
+      "alpha": 1,
+      "random_state": 42
+    },
+    "('tfidf + resnet', 'StartYear')": {
+      "alpha": 1,
+      "random_state": 42
+    },
+    "('tfidf + vit', 'StartYear')": {
+      "alpha": 1,
+      "random_state": 42
+    },
+    "('bert + cannyhog', 'StartYear')": {
+      "alpha": 10,
+      "random_state": 42
+    },
+    "('bert + resnet', 'StartYear')": {
+      "alpha": 10,
+      "random_state": 42
+    },
+    "('bert + vit', 'StartYear')": {
+      "alpha": 10,
+      "random_state": 42
+    },
+    "('tfidf', 'YearRange')": {
+      "alpha": 1,
+      "random_state": 42
+    },
+    "('bert', 'YearRange')": {
+      "alpha": 100,
+      "random_state": 42
+    },
+    "('cannyhog', 'YearRange')": {
+      "alpha": 100,
+      "random_state": 42
+    },
+    "('resnet', 'YearRange')": {
+      "alpha": 100,
+      "random_state": 42
+    },
+    "('vit', 'YearRange')": {
+      "alpha": 10,
+      "random_state": 42
+    },
+    "('tfidf + cannyhog', 'YearRange')": {
+      "alpha": 10,
+      "random_state": 42
+    },
+    "('tfidf + resnet', 'YearRange')": {
+      "alpha": 10,
+      "random_state": 42
+    },
+    "('tfidf + vit', 'YearRange')": {
+      "alpha": 10,
+      "random_state": 42
+    },
+    "('bert + cannyhog', 'YearRange')": {
+      "alpha": 100,
+      "random_state": 42
+    },
+    "('bert + resnet', 'YearRange')": {
+      "alpha": 100,
+      "random_state": 42
+    },
+    "('bert + vit', 'YearRange')": {
+      "alpha": 100,
+      "random_state": 42
+    }
+  },
+  "Lasso": {
+    "('tfidf', 'StartYear')": {
+      "alpha": 0.01,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('bert', 'StartYear')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('cannyhog', 'StartYear')": {
+      "alpha": 0.0001,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('resnet', 'StartYear')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('vit', 'StartYear')": {
+      "alpha": 0.01,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('tfidf + cannyhog', 'StartYear')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('tfidf + resnet', 'StartYear')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('tfidf + vit', 'StartYear')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('bert + cannyhog', 'StartYear')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('bert + resnet', 'StartYear')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('bert + vit', 'StartYear')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('tfidf', 'YearRange')": {
+      "alpha": 0.01,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('bert', 'YearRange')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('cannyhog', 'YearRange')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('resnet', 'YearRange')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('vit', 'YearRange')": {
+      "alpha": 0.01,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('tfidf + cannyhog', 'YearRange')": {
+      "alpha": 0.01,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('tfidf + resnet', 'YearRange')": {
+      "alpha": 0.01,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('tfidf + vit', 'YearRange')": {
+      "alpha": 0.01,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('bert + cannyhog', 'YearRange')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('bert + resnet', 'YearRange')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    },
+    "('bert + vit', 'YearRange')": {
+      "alpha": 0.1,
+      "max_iter": 10000,
+      "random_state": 42
+    }
+  },
+  "RandomForest": {
+    "('tfidf', 'StartYear')": {
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('bert', 'StartYear')": {
+      "max_depth": 20,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('cannyhog', 'StartYear')": {
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('resnet', 'StartYear')": {
+      "max_depth": 20,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('vit', 'StartYear')": {
+      "max_depth": 20,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('tfidf + cannyhog', 'StartYear')": {
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('tfidf + resnet', 'StartYear')": {
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('tfidf + vit', 'StartYear')": {
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('bert + cannyhog', 'StartYear')": {
+      "max_depth": 20,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('bert + resnet', 'StartYear')": {
+      "max_depth": 20,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('bert + vit', 'StartYear')": {
+      "max_depth": 20,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('tfidf', 'YearRange')": {
+      "max_depth": 20,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('bert', 'YearRange')": {
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('cannyhog', 'YearRange')": {
+      "max_depth": 20,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('resnet', 'YearRange')": {
+      "max_depth": 20,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('vit', 'YearRange')": {
+      "max_depth": null,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('tfidf + cannyhog', 'YearRange')": {
+      "max_depth": 20,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('tfidf + resnet', 'YearRange')": {
+      "max_depth": null,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('tfidf + vit', 'YearRange')": {
+      "max_depth": null,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('bert + cannyhog', 'YearRange')": {
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('bert + resnet', 'YearRange')": {
+      "max_depth": 20,
+      "min_samples_leaf": 2,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    },
+    "('bert + vit', 'YearRange')": {
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "min_samples_split": 2,
+      "n_estimators": 100,
+      "n_jobs": -1,
+      "random_state": 42
+    }
+  },
+  "XGBoost": {
+    "('tfidf', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('bert', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.05,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('cannyhog', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('resnet', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('vit', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('tfidf + cannyhog', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('tfidf + resnet', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('tfidf + vit', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('bert + cannyhog', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('bert + resnet', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('bert + vit', 'StartYear')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('tfidf', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 3,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('bert', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.05,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('cannyhog', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 3,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('resnet', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 3,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('vit', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.05,
+      "max_depth": 3,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('tfidf + cannyhog', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('tfidf + resnet', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.05,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('tfidf + vit', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.1,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('bert + cannyhog', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.05,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('bert + resnet', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.05,
+      "max_depth": 3,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    },
+    "('bert + vit', 'YearRange')": {
+      "colsample_bytree": 0.8,
+      "device": "cuda",
+      "learning_rate": 0.05,
+      "max_depth": 6,
+      "n_estimators": 100,
+      "random_state": 42,
+      "subsample": 0.8,
+      "tree_method": "hist"
+    }
+  },
+  "LightGBM": {
+    "('tfidf', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.1,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('bert', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.1,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('cannyhog', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.1,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('resnet', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.1,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('vit', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.1,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('tfidf + cannyhog', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('tfidf + resnet', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.1,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('tfidf + vit', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.1,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('bert + cannyhog', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.1,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('bert + resnet', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('bert + vit', 'StartYear')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('tfidf', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('bert', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('cannyhog', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('resnet', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.1,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('vit', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('tfidf + cannyhog', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('tfidf + resnet', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": 20,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('tfidf + vit', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('bert + cannyhog', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 64,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('bert + resnet', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    },
+    "('bert + vit', 'YearRange')": {
+      "device": "gpu",
+      "learning_rate": 0.05,
+      "max_depth": -1,
+      "n_estimators": 100,
+      "num_leaves": 31,
+      "random_state": 42,
+      "verbose": -1
+    }
+  }
+}
