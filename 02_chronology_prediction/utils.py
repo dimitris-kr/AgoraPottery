@@ -1,9 +1,13 @@
+import json
+
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 import os
 
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, max_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, max_error, \
+    accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.model_selection import ParameterGrid
 from xgboost import XGBRegressor
 
 import torch
@@ -21,13 +25,22 @@ d_types_methods = {
     "image": ("cannyhog", "resnet", "vit")
 }
 
-metrics = {
+metrics_r = {
     "mae": mean_absolute_error,
     "rmse": mean_squared_error,
     "r2": r2_score,
     "medae": median_absolute_error,
     "maxerror:": max_error,
 }
+
+metrics_c = {
+    "accuracy": accuracy_score,
+    "precision": precision_score,
+    "recall": recall_score,
+    "f1": f1_score,
+}
+
+metric_params = {metric: {"average": "macro", "zero_division": 0} for metric in ["precision", "recall", "f1"]}
 
 
 # READ FEATURES
@@ -81,6 +94,45 @@ def read_targets(path, targets):
     return y
 
 
+# LOAD BEST PARAMS
+
+def load_best_params(path):
+    # Initialize if not exists
+    if not os.path.exists(path):
+        return {}
+
+    # Load
+    with open(path, "r") as f:
+        best_params = json.load(f)
+
+        # Convert stringified tuples back to tuple keys
+        return {
+            model: {
+                eval(k): v for k, v in param_dict.items()
+            } for model, param_dict in best_params.items()
+        }
+
+# SAVE BEST PARAMS
+
+def save_best_params(path, best_params, flag_new_model):
+    if not flag_new_model:
+        print("✅ No new tuning needed — using existing parameters.")
+        return
+
+    # Convert tuple keys to strings to make JSON serializable
+    serializable_params = {
+        model: {
+            str(k): v for k, v in param_dict.items()
+        } for model, param_dict in best_params.items()
+    }
+
+    with open(path, "w") as f:
+        json.dump(serializable_params, f, indent=2)
+
+    print(f"✅ Saved best parameters to {path}")
+
+
+
 # COMBINE FEATURES
 
 def combine_features(feature_sets):
@@ -94,7 +146,7 @@ def combine_features(feature_sets):
 
 # CROSS VALIDATION
 
-def cross_validation(model, folds, X, y):
+def cross_validation(model, folds, metrics, X, y):
     scores = {metric: [] for metric in metrics.keys()}
 
     convert_to_numpy = isinstance(model, XGBRegressor)
@@ -110,7 +162,7 @@ def cross_validation(model, folds, X, y):
         y_pred = model.predict(X_val)
 
         for metric, get_metric_score in metrics.items():
-            metric_score = get_metric_score(y_val, y_pred)
+            metric_score = get_metric_score(y_val, y_pred, **metric_params.get(metric, {}))
 
             if metric == "rmse": metric_score = np.sqrt(metric_score)
             scores[metric].append(metric_score)
@@ -230,13 +282,13 @@ def plot_compare_feature_scores(model_scoreboard, cols=2):
 
 # RUN CROSS VALIDATION
 
-def run_cv(model_name, model_class, best_params, folds, X, y, method, target, enable_plots=True):
+def run_cv(model_name, model_class, best_params, folds, metrics, X, y, method, target, enable_plots=True):
     if best_params:
         if (method, target) not in best_params: return
         model = model_class(**best_params[(method, target)])
     else:
         model = model_class()
-    scores = cross_validation(model, folds, X, y)
+    scores = cross_validation(model, folds, metrics, X, y)
     if enable_plots: plot_cv_scores(scores, model_name, target, method)
 
     return {"model": model_name, "target": target, "features": method, **{metric: scores[metric][0] for metric in metrics}}
@@ -244,13 +296,13 @@ def run_cv(model_name, model_class, best_params, folds, X, y, method, target, en
 
 # RUN CROSS VALIDATION FOR ALL FEATURE SETS AND TARGETS
 
-def run_cv_all(model_name, model_class, best_params, folds, X, y, enable_plots=True):
+def run_cv_all(model_name, model_class, best_params, folds, metrics, X, y, enable_plots=True):
     if enable_plots: print("Cross Validation Score Progression")
     model_scoreboard = []
     for target, _y in y["train"].items():
         # Single Feature Sets
         for method, _X in X["train"].items():
-            scores = run_cv(model_name, model_class, best_params, folds, _X, _y, method, target, enable_plots)
+            scores = run_cv(model_name, model_class, best_params, folds, metrics, _X, _y, method, target, enable_plots)
             model_scoreboard.append(scores)
 
         # Combined Feature Sets (Text+Image)
@@ -259,7 +311,44 @@ def run_cv_all(model_name, model_class, best_params, folds, X, y, enable_plots=T
                 _X = combine_features([X["train"][text_method], X["train"][image_method]])
                 method = f"{text_method} + {image_method}"
 
-                scores = run_cv(model_name, model_class, best_params, folds, _X, _y, method, target, enable_plots)
+                scores = run_cv(model_name, model_class, best_params, folds, metrics, _X, _y, method, target, enable_plots)
                 model_scoreboard.append(scores)
 
     return pd.DataFrame(model_scoreboard)
+
+
+## HYPERPARAMETER TUNING
+
+def hyperparameter_tuning(model_class, param_grid, folds, metrics, X, y, deciding_metric, verbose=False):
+    param_scores = []
+
+    for params in ParameterGrid(param_grid):
+        model = model_class(**params)
+        s = cross_validation(model, folds, metrics, X, y)
+        param_scores.append((params, s[deciding_metric][0]))  # [0] is the mean across folds
+
+    calc_best = max if deciding_metric == "r2" or deciding_metric in metrics_c else min
+    best_params, best_score = calc_best(param_scores, key=lambda x: x[1])
+
+    if verbose:
+        print(f"✅ Best params: {best_params}")
+        print(f"🎯 Best {deciding_metric.upper()}: {best_score:.4f}")
+
+    return best_params
+
+def run_hp_all(model_class, param_grid, folds, metrics, X, y, deciding_metric, verbose=False):
+    model_best_params = {}
+    for target, _y in y.items():
+        for method, _X in X.items():
+            if verbose: print(f"\nFeatures: {method} | Target: {target}")
+            model_best_params[(method, target)] = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y, deciding_metric, verbose)
+
+        for text_method in d_types_methods["text"]:
+            for image_method in d_types_methods["image"]:
+                _X = combine_features([X[text_method], X[image_method]])
+                method = f"{text_method} + {image_method}"
+
+                if verbose: print(f"\nFeatures: {method} | Target: {target}")
+                model_best_params[(method, target)] = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y, deciding_metric, verbose)
+
+    return model_best_params
