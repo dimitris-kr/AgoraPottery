@@ -8,10 +8,11 @@ import os
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, max_error, \
     accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.model_selection import ParameterGrid
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from xgboost import XGBRegressor
 
 import torch
-
 
 # CONSTANTS
 
@@ -46,7 +47,6 @@ metric_params = {metric: {"average": "macro", "zero_division": 0} for metric in 
 # READ FEATURES
 
 def read_features(path, f_type="vectors"):
-
     if f_type not in f_types:
         return None
 
@@ -86,12 +86,41 @@ def read_targets(path, targets):
             y[subset] = pd.read_csv(file_path)
             print(f"Loaded y_{subset}")
 
-    targets =  [target for target in targets if target in y["train"]]
+    targets = [target for target in targets if target in y["train"]]
     if len(targets) == 0:
         return None
 
     y = {subset: _y[targets] for subset, _y in y.items()}
     return y
+
+
+# PRINT INFO
+
+def print_info_features(X):
+    print("X = {")
+    for subset in X.keys():
+        indent = "\t"
+        print(f"{indent}{subset}: " + "{")
+        for method in X[subset].keys():
+            indent = 2 * "\t"
+            print(f"{indent}{method}: ")
+            indent = 3 * "\t"
+            print(f"{indent}{type(X[subset][method])}")
+            print(f"{indent}shape = {X[subset][method].shape}, ")
+        print("\t},")
+    print("}")
+
+
+def print_info_targets(y):
+    print("y = {")
+    for subset in y.keys():
+        indent = "\t"
+        print(f"{indent}{subset}: ")
+        indent = 2 * "\t"
+        print(f"{indent}{type(y[subset])}")
+        print(f"{indent}shape {y[subset].shape}")
+        print(f"{indent}columns {list(y[subset].columns)},")
+    print("}")
 
 
 # LOAD BEST PARAMS
@@ -112,6 +141,7 @@ def load_best_params(path):
             } for model, param_dict in best_params.items()
         }
 
+
 # SAVE BEST PARAMS
 
 def save_best_params(path, best_params, flag_new_model):
@@ -130,7 +160,6 @@ def save_best_params(path, best_params, flag_new_model):
         json.dump(serializable_params, f, indent=2)
 
     print(f"✅ Saved best parameters to {path}")
-
 
 
 # COMBINE FEATURES
@@ -291,7 +320,8 @@ def run_cv(model_name, model_class, best_params, folds, metrics, X, y, method, t
     scores = cross_validation(model, folds, metrics, X, y)
     if enable_plots: plot_cv_scores(scores, model_name, target, method)
 
-    return {"model": model_name, "target": target, "features": method, **{metric: scores[metric][0] for metric in metrics}}
+    return {"model": model_name, "target": target, "features": method,
+            **{metric: scores[metric][0] for metric in metrics}}
 
 
 # RUN CROSS VALIDATION FOR ALL FEATURE SETS AND TARGETS
@@ -311,7 +341,8 @@ def run_cv_all(model_name, model_class, best_params, folds, metrics, X, y, enabl
                 _X = combine_features([X["train"][text_method], X["train"][image_method]])
                 method = f"{text_method} + {image_method}"
 
-                scores = run_cv(model_name, model_class, best_params, folds, metrics, _X, _y, method, target, enable_plots)
+                scores = run_cv(model_name, model_class, best_params, folds, metrics, _X, _y, method, target,
+                                enable_plots)
                 model_scoreboard.append(scores)
 
     return pd.DataFrame(model_scoreboard)
@@ -336,19 +367,54 @@ def hyperparameter_tuning(model_class, param_grid, folds, metrics, X, y, decidin
 
     return best_params
 
+
 def run_hp_all(model_class, param_grid, folds, metrics, X, y, deciding_metric, verbose=False):
     model_best_params = {}
     for target, _y in y.items():
         for method, _X in X.items():
             if verbose: print(f"\nFeatures: {method} | Target: {target}")
-            model_best_params[(method, target)] = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y, deciding_metric, verbose)
+            model_best_params[(method, target)] = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y,
+                                                                        deciding_metric, verbose)
 
-        for text_method in d_types_methods["text"]:
-            for image_method in d_types_methods["image"]:
-                _X = combine_features([X[text_method], X[image_method]])
-                method = f"{text_method} + {image_method}"
-
-                if verbose: print(f"\nFeatures: {method} | Target: {target}")
-                model_best_params[(method, target)] = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y, deciding_metric, verbose)
+        # for text_method in d_types_methods["text"]:
+        #     for image_method in d_types_methods["image"]:
+        #         _X = combine_features([X[text_method], X[image_method]])
+        #         method = f"{text_method} + {image_method}"
+        #
+        #         if verbose: print(f"\nFeatures: {method} | Target: {target}")
+        #         model_best_params[(method, target)] = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y, deciding_metric, verbose)
 
     return model_best_params
+
+
+def combine_features_all_txt_img(X):
+    return {
+        f"{text_method} + {image_method}": combine_features([X[text_method], X[image_method]])
+        for text_method in d_types_methods["text"] for image_method in d_types_methods["image"]
+    }
+
+
+def scale_feature_set(X):
+    scaler = StandardScaler()
+    return pd.DataFrame(
+        scaler.fit_transform(X),
+        columns=X.columns,
+        index=X.index
+    )
+
+
+def reduce_components(X, reducer_fitted=None, n_components=0.95, random_state=42):
+    X = scale_feature_set(X)
+    if reducer_fitted:
+        reducer = reducer_fitted
+        X_reduced = reducer.transform(X)
+    else:
+        reducer = PCA(n_components=n_components, random_state=random_state)
+        X_reduced = reducer.fit_transform(X)
+
+    X_reduced = pd.DataFrame(
+        X_reduced,
+        columns=X.columns[:X_reduced.shape[1]],
+        index=X.index
+    )
+    return X_reduced, reducer

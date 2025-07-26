@@ -3,79 +3,136 @@
     "('tfidf', 'HistoricalPeriod_encoded')": {
       "C": 1,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
       "solver": "lbfgs"
     },
     "('bert', 'HistoricalPeriod_encoded')": {
       "C": 0.01,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
       "solver": "lbfgs"
     },
     "('cannyhog', 'HistoricalPeriod_encoded')": {
-      "C": 0.01,
+      "C": 10,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
       "solver": "lbfgs"
     },
     "('resnet', 'HistoricalPeriod_encoded')": {
       "C": 0.01,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
       "solver": "lbfgs"
     },
     "('vit', 'HistoricalPeriod_encoded')": {
-      "C": 0.1,
+      "C": 0.01,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
       "solver": "lbfgs"
     },
     "('tfidf + cannyhog', 'HistoricalPeriod_encoded')": {
-      "C": 1,
+      "C": 0.01,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
-      "solver": "lbfgs"
+      "solver": "liblinear"
     },
     "('tfidf + resnet', 'HistoricalPeriod_encoded')": {
-      "C": 1,
+      "C": 0.01,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
       "solver": "lbfgs"
     },
     "('tfidf + vit', 'HistoricalPeriod_encoded')": {
-      "C": 10,
+      "C": 0.01,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
       "solver": "liblinear"
     },
     "('bert + cannyhog', 'HistoricalPeriod_encoded')": {
       "C": 0.01,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
-      "solver": "lbfgs"
+      "solver": "liblinear"
     },
     "('bert + resnet', 'HistoricalPeriod_encoded')": {
       "C": 0.01,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
       "solver": "lbfgs"
     },
     "('bert + vit', 'HistoricalPeriod_encoded')": {
       "C": 0.01,
       "class_weight": null,
-      "max_iter": 1000,
+      "max_iter": 5000,
       "random_state": 42,
       "solver": "lbfgs"
+    }
+  },
+  "KNN": {
+    "('tfidf', 'HistoricalPeriod_encoded')": {
+      "metric": "cosine",
+      "n_neighbors": 5,
+      "weights": "distance"
+    },
+    "('bert', 'HistoricalPeriod_encoded')": {
+      "metric": "manhattan",
+      "n_neighbors": 3,
+      "weights": "distance"
+    },
+    "('cannyhog', 'HistoricalPeriod_encoded')": {
+      "metric": "euclidean",
+      "n_neighbors": 9,
+      "weights": "distance"
+    },
+    "('resnet', 'HistoricalPeriod_encoded')": {
+      "metric": "cosine",
+      "n_neighbors": 7,
+      "weights": "distance"
+    },
+    "('vit', 'HistoricalPeriod_encoded')": {
+      "metric": "euclidean",
+      "n_neighbors": 7,
+      "weights": "distance"
+    },
+    "('tfidf + cannyhog', 'HistoricalPeriod_encoded')": {
+      "metric": "cosine",
+      "n_neighbors": 3,
+      "weights": "distance"
+    },
+    "('tfidf + resnet', 'HistoricalPeriod_encoded')": {
+      "metric": "cosine",
+      "n_neighbors": 5,
+      "weights": "distance"
+    },
+    "('tfidf + vit', 'HistoricalPeriod_encoded')": {
+      "metric": "cosine",
+      "n_neighbors": 5,
+      "weights": "distance"
+    },
+    "('bert + cannyhog', 'HistoricalPeriod_encoded')": {
+      "metric": "cosine",
+      "n_neighbors": 9,
+      "weights": "distance"
+    },
+    "('bert + resnet', 'HistoricalPeriod_encoded')": {
+      "metric": "cosine",
+      "n_neighbors": 7,
+      "weights": "distance"
+    },
+    "('bert + vit', 'HistoricalPeriod_encoded')": {
+      "metric": "cosine",
+      "n_neighbors": 7,
+      "weights": "distance"
     }
   }
 }
