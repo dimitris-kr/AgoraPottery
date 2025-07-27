@@ -348,6 +348,17 @@ def run_cv_all(model_name, model_class, best_params, folds, metrics, X, y, enabl
     return pd.DataFrame(model_scoreboard)
 
 
+def run_cv_all_2(model_name, model_class, best_params, folds, metrics, X, y, enable_plots=True):
+    if enable_plots: print("Cross Validation Score Progression")
+    model_scoreboard = []
+    for target, _y in y.items():
+        for method, _X in X.items():
+            scores = run_cv(model_name, model_class, best_params, folds, metrics, _X, _y, method, target, enable_plots)
+            model_scoreboard.append(scores)
+
+    return pd.DataFrame(model_scoreboard)
+
+
 ## HYPERPARAMETER TUNING
 
 def hyperparameter_tuning(model_class, param_grid, folds, metrics, X, y, deciding_metric, verbose=False):
@@ -387,11 +398,14 @@ def run_hp_all(model_class, param_grid, folds, metrics, X, y, deciding_metric, v
     return model_best_params
 
 
-def combine_features_all_txt_img(X):
-    return {
-        f"{text_method} + {image_method}": combine_features([X[text_method], X[image_method]])
-        for text_method in d_types_methods["text"] for image_method in d_types_methods["image"]
-    }
+def combine_features_all_txt_img(X, scale=False):
+    X_combos = {}
+    for text_method in d_types_methods["text"]:
+        for image_method in d_types_methods["image"]:
+            X_combo = combine_features([X[text_method], X[image_method]])
+            if scale: X_combo = scale_feature_set(X_combo)
+            X_combos[f"{text_method} + {image_method}"] = X_combo
+    return X_combos
 
 
 def scale_feature_set(X):
