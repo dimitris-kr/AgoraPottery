@@ -10,7 +10,7 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, m
 from sklearn.model_selection import ParameterGrid
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from xgboost import XGBRegressor
+from xgboost import XGBRegressor, XGBClassifier
 
 import torch
 
@@ -178,7 +178,7 @@ def combine_features(feature_sets):
 def cross_validation(model, folds, metrics, X, y):
     scores = {metric: [] for metric in metrics.keys()}
 
-    convert_to_numpy = isinstance(model, XGBRegressor)
+    convert_to_numpy = isinstance(model, XGBRegressor) or isinstance(model, XGBClassifier)
 
     for train_idx, val_idx in folds:
         X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
@@ -227,7 +227,7 @@ def plt_title(model, target, features):
     return title
 
 
-subplots = [
+subplots_r = [
     {
         'metrics': ["mae", "rmse", "medae"],
         'colors': ['blue', 'green', 'orange'],
@@ -242,13 +242,29 @@ subplots = [
     }
 ]
 
+subplots_c = [
+    {
+        'metrics': list(metrics_c.keys()),
+        'colors': ['blue', 'green', 'orange', 'purple'],
+        'ylabel': 'Score',
+        'ylim': 1
+    }
+]
 
-def plot_cv_scores(scores, model, target, method, cols=2):
+
+def plot_cv_scores(scores, model, target, method):
     plt.figure(figsize=(14, 5))
 
+    if set(scores.keys()).issubset(metrics_r.keys()):
+        subplots = subplots_r
+    elif set(scores.keys()).issubset(metrics_c.keys()):
+        subplots = subplots_c
+    else:
+        return
+
     for idx, subplot in enumerate(subplots):
-        rows = len(subplots) // cols + (1 if len(subplots) % 2 > 0 else 0)
-        plt.subplot(rows, cols, idx + 1)
+        # rows = len(subplots) // cols + (1 if len(subplots) % 2 > 0 else 0)
+        plt.subplot(1, len(subplots), idx + 1)
 
         min_y = 0
         max_y = 0
@@ -277,7 +293,15 @@ def plot_cv_scores(scores, model, target, method, cols=2):
     # print("\n")
 
 
-def plot_compare_feature_scores(model_scoreboard, cols=2):
+def plot_compare_feature_scores(model_scoreboard):
+    current_metrics = set(model_scoreboard.columns) - {'model', 'target', 'features'}
+    if current_metrics.issubset(metrics_r.keys()):
+        subplots = subplots_r
+    elif current_metrics.issubset(metrics_c.keys()):
+        subplots = subplots_c
+    else:
+        return
+
     print("Compare Mean Cross Validation Scores of Feature Sets for One Model")
     model = model_scoreboard["model"].unique()[0]
 
@@ -288,18 +312,25 @@ def plot_compare_feature_scores(model_scoreboard, cols=2):
         x = np.arange(len(df))
 
         for idx, subplot in enumerate(subplots):
-            rows = len(subplots) // cols + (1 if len(subplots) % 2 > 0 else 0)
-            plt.subplot(rows, cols, idx + 1)
+            # rows = len(subplots) // cols + (1 if len(subplots) % 2 > 0 else 0)
+            plt.subplot(1, len(subplots), idx + 1)
 
             bar_width = 0.6 / len(subplot['metrics'])
             offsets = [i - (len(subplot['metrics']) - 1) / 2 for i in range(len(subplot['metrics']))]
 
+            min_y = 0
+            max_y = 0
+
             for metric, color, offset in zip(subplot['metrics'], subplot['colors'], offsets):
                 plt.bar(x + offset * bar_width, df[metric], width=bar_width, label=metric.upper(), color=color)
+
+                max_y = max(max_y, df[metric].max())
+                min_y = min(min_y, df[metric].min())
 
             plt.axhline(0, color='gray', alpha=0.5, linestyle='--')
             plt.xticks(ticks=x, labels=df["features"], rotation=45, ha='right')
             plt.ylabel(subplot['ylabel'])
+            plt.ylim(min_y * 1.1, subplot['ylim'] if 'ylim' in subplot else max_y * 1.2)
             plt.title(', '.join(subplot['metrics']).upper(), fontsize="12")
             plt.legend()
             plt.grid(True)
