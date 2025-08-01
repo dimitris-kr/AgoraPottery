@@ -3,7 +3,9 @@ import json
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
+import seaborn as sns
 import os
+from itertools import product
 
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, max_error, \
     accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
@@ -322,8 +324,12 @@ def plot_compare_feature_scores(model_scoreboard):
             max_y = 0
 
             for metric, color, offset in zip(subplot['metrics'], subplot['colors'], offsets):
-                plt.bar(x + offset * bar_width, df[metric], width=bar_width, label=metric.upper(), color=color)
-
+                bars = plt.bar(x + offset * bar_width, df[metric], width=bar_width, label=metric.upper(), color=color)
+                for bar in bars:
+                    height = bar.get_height()
+                    plt.text(
+                        bar.get_x() + bar.get_width() / 2, height + 0.01, f"{height:.2f}", ha='center', va='bottom',
+                        fontsize=9, rotation=90)
                 max_y = max(max_y, df[metric].max())
                 min_y = min(min_y, df[metric].min())
 
@@ -463,3 +469,114 @@ def reduce_components(X, reducer_fitted=None, n_components=0.95, random_state=42
         index=X.index
     )
     return X_reduced, reducer
+
+
+# EVALUATE SCOREBOARD
+
+def get_unique(df, columns):
+    return (df[column].unique().tolist() for column in columns)
+
+
+def get_color_map(values, palette_name):
+    palette = sns.color_palette(palette_name, len(values))
+    return dict(zip(values, palette))
+
+
+def plot_metric_in_groups(df, metric, x_axis, group_by, palette, ylim=None):
+    plt.figure(figsize=(16, 8))
+    sns.barplot(
+        data=df,
+        x=x_axis,
+        y=metric,
+        hue=group_by,
+        palette=palette
+    )
+
+    if ylim: plt.ylim(0, ylim)
+
+    plt.xticks(rotation=45)
+    plt.title(
+        f"{metric.upper()} per {x_axis.upper()} | Grouped by {group_by.upper()} | Target = {df['target'].values[0]}")
+    plt.ylabel(metric.upper())
+    plt.xlabel(x_axis.upper())
+    plt.legend(title=group_by.upper())
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_pivot_table(df, metric, models, features):
+    # Create pivot table with explicit order
+    pivot = df.pivot_table(
+        index="model",
+        columns="features",
+        values=metric
+    ).reindex(index=models, columns=features)
+
+    # Plot
+    plt.figure(figsize=(12, 6))
+    sns.heatmap(pivot, annot=True, fmt=".2f", cmap="mako", linewidths=0.5)
+    better_dir = ""
+    if metric in metrics_c or metric == "r2":
+        better_dir = "Higher"
+    elif metric in metrics_r and metric != "r2":
+        better_dir = "Lower"
+    plt.title(
+        f"{metric.upper()} Pivot Table (Heatmap)" + f" | {better_dir} is Better" if better_dir else "" + f" | Target = {df['target'].values[0]}")
+
+    plt.xlabel("FEATURES")
+    plt.ylabel("MODELS")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_best_of_each(df, metric, x_axis, find_best, palette, ylim=None):
+    best_of_each = df.loc[df.groupby(x_axis)[metric].idxmax()]
+    best_of_each = best_of_each.sort_values(metric, ascending=metric in metrics_r and metric != "r2")
+
+    plt.figure(figsize=(12, 6))
+    ax = sns.barplot(
+        data=best_of_each,
+        x=x_axis,
+        y=metric,
+        hue=find_best,
+        palette=palette
+    )
+
+    # Add model name as a label on top of each bar
+    for container, label in zip(ax.containers, best_of_each[find_best].unique()):
+        ax.bar_label(container, labels=[label] * len(container), fontsize=9, label_type='edge')
+
+    plt.title(f"Best {find_best.upper()} per {x_axis.upper()} | Target = {df['target'].values[0]}")
+    plt.ylabel(metric.upper())
+    plt.xlabel(x_axis.upper())
+    plt.xticks(rotation=45)
+    if ylim: plt.ylim(0, ylim)
+    plt.legend(title=find_best.upper())
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_best_by_data_type(df, metric, palette, lim=None, top_n=5):
+    d_types_methods_full = d_types_methods.copy()
+    d_types_methods_full["combo"] = tuple(f"{t} + {i}" for t in d_types_methods["text"] for i in d_types_methods["image"])
+    for d_type, features in d_types_methods_full.items():
+        subset = df.loc[df["features"].isin(features)]
+
+        if subset.empty:
+            continue
+
+        subset = subset.sort_values(metric, ascending=metric in metrics_r and metric != "r2").head(top_n)
+        subset["combo"] = subset["model"] + " w/ " + subset["features"]
+
+        plt.figure(figsize=(10, 6))
+        sns.barplot(data=subset, x=metric, y="combo", hue="model", palette=palette)
+        plt.title(f"Top {top_n} MODEL & FEATURE pair | {d_type.upper()} Data | Target = {df['target'].values[0]}")
+        plt.xlabel(metric.upper())
+        plt.ylabel("MODEL & FEATURE pair")
+        if lim: plt.xlim(0, lim)
+        plt.grid(True, axis="x", linestyle="--", alpha=0.6)
+        for index, value in enumerate(subset[metric]):
+            plt.text(value + 0.01, index, f"{value:.2f}", va='center', fontsize=9)
+        plt.tight_layout()
+        plt.show()
