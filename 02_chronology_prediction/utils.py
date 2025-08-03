@@ -482,24 +482,48 @@ def get_color_map(values, palette_name):
     return dict(zip(values, palette))
 
 
-def plot_metric_in_groups(df, metric, x_axis, group_by, palette, ylim=None):
-    plt.figure(figsize=(16, 8))
+def plot_metric_in_groups(df, metric, group_elems, single_elems, palette, lim=None, step=None):
+    plt.figure(figsize=(10, 8))
     sns.barplot(
         data=df,
-        x=x_axis,
-        y=metric,
-        hue=group_by,
-        palette=palette
+        x=metric,
+        y=group_elems,
+        hue=single_elems,
+        palette=palette,
+        errorbar=None
     )
 
-    if ylim: plt.ylim(0, ylim)
+    if not lim: lim = np.max(df[metric])
+    if not step:
+        plt.xlim(0, 1.1 * lim)
+    else:
+        plt.xticks(np.arange(0, lim + step, step))
 
-    plt.xticks(rotation=45)
     plt.title(
-        f"{metric.upper()} per {x_axis.upper()} | Grouped by {group_by.upper()} | Target = {df['target'].values[0]}")
-    plt.ylabel(metric.upper())
-    plt.xlabel(x_axis.upper())
-    plt.legend(title=group_by.upper())
+        f"{metric.upper()} per {group_elems.upper()} | Grouped by {single_elems.upper()} | Target = {df['target'].values[0]}")
+    plt.xlabel(metric.upper())
+    plt.ylabel(group_elems.upper())
+    plt.legend(title=single_elems.upper())
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_metric_points(df, metric, group_elems, point_elems, palette, lim=None, step=None):
+    plt.figure(figsize=(12, 8))
+    sns.pointplot(data=df, x=group_elems, y=metric, hue=point_elems,
+                  palette=palette, markers="o")
+    if not lim: lim = np.max(df[metric])
+    if not step:
+        plt.ylim(1.1 * np.min(df[metric].tolist() + [0.0]), 1.1 * lim)
+    else:
+        plt.yticks(np.arange(1.1 * np.min(df[metric].tolist() + [0.0]), lim + step, step))
+    plt.title(
+        f"{metric.upper()} per {group_elems.upper()} and {point_elems.upper()} | Target = {df['target'].values[0]}")
+    plt.xticks(rotation=45)
+    plt.xlabel(metric.upper())
+    plt.ylabel(group_elems.upper())
+    plt.legend(title=point_elems.upper())
     plt.grid(True)
     plt.tight_layout()
     plt.show()
@@ -514,8 +538,12 @@ def plot_pivot_table(df, metric, models, features):
     ).reindex(index=models, columns=features)
 
     # Plot
-    plt.figure(figsize=(12, 6))
-    sns.heatmap(pivot, annot=True, fmt=".2f", cmap="mako", linewidths=0.5)
+    plt.figure(figsize=(10, 6))
+
+    cmap = "mako"
+    if metric in metrics_r and metric != "r2": cmap += "_r"
+
+    sns.heatmap(pivot, annot=True, fmt=".2f", cmap=cmap, linewidths=0.5)
     better_dir = ""
     if metric in metrics_c or metric == "r2":
         better_dir = "Higher"
@@ -530,15 +558,23 @@ def plot_pivot_table(df, metric, models, features):
     plt.show()
 
 
-def plot_best_of_each(df, metric, x_axis, find_best, palette, ylim=None):
-    best_of_each = df.loc[df.groupby(x_axis)[metric].idxmax()]
-    best_of_each = best_of_each.sort_values(metric, ascending=metric in metrics_r and metric != "r2")
+def plot_best_of_each(df, metric, group_elems, find_best, palette, lim=None, step=None):
+    if metric in metrics_r and metric != "r2":
+        best_of_each = df.loc[df.groupby(group_elems)[metric].idxmin()]
+        asc = True
+    elif metric in metrics_c or metric == "r2":
+        best_of_each = df.loc[df.groupby(group_elems)[metric].idxmax()]
+        asc = False
+    else:
+        return
 
-    plt.figure(figsize=(12, 6))
+    best_of_each = best_of_each.sort_values(metric, ascending=asc)
+
+    plt.figure(figsize=(10, 8))
     ax = sns.barplot(
         data=best_of_each,
-        x=x_axis,
-        y=metric,
+        x=metric,
+        y=group_elems,
         hue=find_best,
         palette=palette
     )
@@ -547,36 +583,47 @@ def plot_best_of_each(df, metric, x_axis, find_best, palette, ylim=None):
     for container, label in zip(ax.containers, best_of_each[find_best].unique()):
         ax.bar_label(container, labels=[label] * len(container), fontsize=9, label_type='edge')
 
-    plt.title(f"Best {find_best.upper()} per {x_axis.upper()} | Target = {df['target'].values[0]}")
-    plt.ylabel(metric.upper())
-    plt.xlabel(x_axis.upper())
-    plt.xticks(rotation=45)
-    if ylim: plt.ylim(0, ylim)
+    if not lim: lim = np.max(best_of_each[metric])
+    if not step:
+        plt.xlim(0, 1.1 * lim)
+    else:
+        plt.xticks(np.arange(0, lim + step, step))
+
+    plt.title(f"Best {find_best.upper()} per {group_elems.upper()} | Target = {df['target'].values[0]}")
+    plt.xlabel(metric.upper())
+    plt.ylabel(group_elems.upper())
     plt.legend(title=find_best.upper())
     plt.tight_layout()
     plt.show()
 
 
-def plot_best_by_data_type(df, metric, palette, lim=None, top_n=5):
+def plot_best_by_data_type(df, metric, palette, top_n=5, lim=None, step=None):
     d_types_methods_full = d_types_methods.copy()
-    d_types_methods_full["combo"] = tuple(f"{t} + {i}" for t in d_types_methods["text"] for i in d_types_methods["image"])
+    d_types_methods_full["combo"] = tuple(
+        f"{t} + {i}" for t in d_types_methods["text"] for i in d_types_methods["image"])
     for d_type, features in d_types_methods_full.items():
         subset = df.loc[df["features"].isin(features)]
-
         if subset.empty:
             continue
 
-        subset = subset.sort_values(metric, ascending=metric in metrics_r and metric != "r2").head(top_n)
-        subset["combo"] = subset["model"] + " w/ " + subset["features"]
+
+        top_n_set = subset.sort_values(metric, ascending=metric in metrics_r and metric != "r2").head(top_n)
+        top_n_set["pair"] = top_n_set["model"] + " w/ " + top_n_set["features"]
 
         plt.figure(figsize=(10, 6))
-        sns.barplot(data=subset, x=metric, y="combo", hue="model", palette=palette)
+        sns.barplot(data=top_n_set, x=metric, y="pair", hue="model", palette=palette)
         plt.title(f"Top {top_n} MODEL & FEATURE pair | {d_type.upper()} Data | Target = {df['target'].values[0]}")
         plt.xlabel(metric.upper())
         plt.ylabel("MODEL & FEATURE pair")
-        if lim: plt.xlim(0, lim)
+
+        lim_curr = lim if lim else np.max(top_n_set[metric])
+        if not step:
+            plt.xlim(0, 1.1 * lim_curr)
+        else:
+            plt.xticks(np.arange(0, lim_curr + step, step))
+
         plt.grid(True, axis="x", linestyle="--", alpha=0.6)
-        for index, value in enumerate(subset[metric]):
+        for index, value in enumerate(top_n_set[metric]):
             plt.text(value + 0.01, index, f"{value:.2f}", va='center', fontsize=9)
         plt.tight_layout()
         plt.show()
