@@ -8,7 +8,7 @@ import os
 from itertools import product
 
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, max_error, \
-    accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+    accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.model_selection import ParameterGrid
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
@@ -197,6 +197,11 @@ def cross_validation(model, folds, metrics, X, y):
 
             if metric == "rmse": metric_score = np.sqrt(metric_score)
             scores[metric].append(metric_score)
+
+        # TODO
+        # fold_scores = evaluate(y_val, y_pred, metrics)
+        # for metric in scores.keys():
+        #     scores[metric].append(fold_scores[metric])
 
     return {metric: (np.mean(values), values) for metric, values in scores.items()}
 
@@ -627,3 +632,54 @@ def plot_best_by_data_type(df, metric, palette, top_n=5, lim=None, step=None):
             plt.text(value + 0.01, index, f"{value:.2f}", va='center', fontsize=9)
         plt.tight_layout()
         plt.show()
+
+def evaluate(y_true, y_pred, metrics):
+    scores = {}
+    for metric, get_metric_score in metrics.items():
+        metric_score = get_metric_score(y_true, y_pred, **metric_params.get(metric, {}))
+
+        if metric == "rmse": metric_score = np.sqrt(metric_score)
+        scores[metric] = metric_score
+    return scores
+
+def plot_confusion_matrix(cm, le, model_name, features):
+    # Normalize confusion matrix by rows (true labels)
+    cm_norm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
+
+    # Calculate true class counts
+    true_counts = cm.sum(axis=1)
+    true_labels = [f"{label}\n({count} samples)" for label, count in zip(le.classes_, true_counts)]
+
+    # Predicted class labels
+    predicted_labels = le.classes_
+
+    # Plot
+    plt.subplots(figsize=(8, 6))
+    ax = sns.heatmap(
+        cm_norm,
+        annot=True,
+        fmt=".0%",
+        cmap="Blues",
+        xticklabels=predicted_labels,
+        yticklabels=true_labels
+    )
+
+    # Rotate y-axis labels to horizontal
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+
+    # Move x-axis labels to the top
+    ax.xaxis.set_ticks_position('top')
+    ax.xaxis.set_label_position('top')
+
+    # Customize colorbar to show % ticks
+    cbar = ax.collections[0].colorbar
+    ticks = np.arange(0, 1.1, 0.2)
+    cbar.ax.set_yticks(ticks)
+    cbar.ax.set_yticklabels([f"{int(t * 100)}%" for t in ticks])
+
+    plt.grid(False)
+    plt.title(f"Confusion Matrix | Model: {model_name} | Features: {features.upper()}", pad=20)
+    plt.xlabel("Predicted Label", labelpad=15)
+    plt.ylabel("True Label (Count)", labelpad=15)
+    plt.tight_layout()
+    plt.show()
