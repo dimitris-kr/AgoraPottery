@@ -192,16 +192,9 @@ def cross_validation(model, folds, metrics, X, y):
         model.fit(X_train, y_train)
         y_pred = model.predict(X_val)
 
-        for metric, get_metric_score in metrics.items():
-            metric_score = get_metric_score(y_val, y_pred, **metric_params.get(metric, {}))
-
-            if metric == "rmse": metric_score = np.sqrt(metric_score)
-            scores[metric].append(metric_score)
-
-        # TODO
-        # fold_scores = evaluate(y_val, y_pred, metrics)
-        # for metric in scores.keys():
-        #     scores[metric].append(fold_scores[metric])
+        fold_scores = evaluate(y_val, y_pred, metrics)
+        for metric, value in fold_scores.items():
+            scores[metric].append(value)
 
     return {metric: (np.mean(values), values) for metric, values in scores.items()}
 
@@ -682,4 +675,54 @@ def plot_confusion_matrix(cm, le, model_name, features):
     plt.xlabel("Predicted Label", labelpad=15)
     plt.ylabel("True Label (Count)", labelpad=15)
     plt.tight_layout()
+    plt.show()
+
+def autopct_with_counts(values):
+    def inner_autopct(pct):
+        total = sum(values)
+        count = int(round(pct * total / 100.0))
+        return f"{pct:.0f}%\n({count})"
+
+    return inner_autopct
+
+
+def plot_pie(ax, values, label_prefixes, class_name, reverse=False):
+
+    labels = [f"Predicted as {class_name}", f"Not Predicted as {class_name}"]
+    if reverse:
+        labels = reversed(labels)
+    labels = [f"{prefix}: {label}" for prefix, label in zip(label_prefixes, labels)]
+
+    wedges, _, _ = ax.pie(
+        values,
+        colors=["#4a90e2", "#e74c3c"],
+        startangle=90,
+        autopct=autopct_with_counts(values),
+        wedgeprops={"edgecolor": "white"}
+    )
+    title = f"{class_name} Samples"
+    if reverse:
+        title = "Non-" + title
+    ax.set_title(title, fontsize=12, pad=20, weight="bold")
+    ax.legend(wedges, labels, loc="upper center", fontsize=8, bbox_to_anchor=(0.5, 1.08))
+
+
+def plot_cm_pies(cm, le):
+    classes = le.classes_
+    total_samples = cm.sum()
+
+    fig, axes = plt.subplots(nrows=len(classes), ncols=2, figsize=(8, 4.5 * len(classes)))
+
+    for i, class_name in enumerate(classes):
+        TP = cm[i, i]
+        FN = cm[i, :].sum() - TP
+        FP = cm[:, i].sum() - TP
+        TN = total_samples - (TP + FN + FP)
+
+        # --- TP/FN Pie Chart ---
+        plot_pie(axes[i, 0], [TP, FN], ["TP", "FN"], class_name)
+
+        # --- TN/FP Pie Chart ---
+        plot_pie(axes[i, 1], [TN, FP], ["TN", "FP"], class_name, reverse=True)
+
     plt.show()
