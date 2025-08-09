@@ -10,7 +10,7 @@ from itertools import product
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, max_error, \
     accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.model_selection import ParameterGrid
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.decomposition import PCA
 from xgboost import XGBRegressor, XGBClassifier
 
@@ -99,7 +99,7 @@ def read_targets(path, targets):
 # PRINT INFO
 
 def print_info_features(X):
-    print("X = {")
+    print("{")
     for subset in X.keys():
         indent = "\t"
         print(f"{indent}{subset}: " + "{")
@@ -343,6 +343,38 @@ def plot_compare_feature_scores(model_scoreboard):
         plt.tight_layout()
         plt.show()
 
+def plot_prediction_scores(scores, model, target, features):
+    if set(scores.keys()).issubset(metrics_r.keys()):
+        subplots = subplots_r
+    elif set(scores.keys()).issubset(metrics_c.keys()):
+        subplots = subplots_c
+    else:
+        return
+
+    for idx, subplot in enumerate(subplots):
+        plt.subplot(1, len(subplots), idx + 1)
+
+        metrics = subplot['metrics']
+        colors = subplot['colors']
+        values = [scores[metric] for metric in subplot['metrics']]
+
+        bars = plt.barh(metrics, values, color=colors)
+
+        for bar, val in zip(bars, values):
+            plt.text(
+                val + 0.01,
+                bar.get_y() + bar.get_height()/2,
+                f"{val:.4f}",
+                va='center', fontsize=10
+            )
+
+        plt.xlabel(subplot['ylabel'])
+        plt.ylabel("Metrics")
+        plt.xlim(min([0] + values) * 1.1, subplot['ylim'] if 'ylim' in subplot else max(values) * 1.2)
+
+    plt.suptitle("Prediction Evaluation | " + plt_title(model, target, features), fontsize="12")
+    plt.grid(axis='x', linestyle='--', alpha=0.6)
+    plt.show()
 
 # RUN CROSS VALIDATION
 
@@ -433,7 +465,7 @@ def run_hp_all(model_class, param_grid, folds, metrics, X, y, deciding_metric, v
     return model_best_params
 
 
-def combine_features_all_txt_img(X, scale=False):
+def combine_features_all(X, scale=False):
     X_combos = {}
     for text_method in d_types_methods["text"]:
         for image_method in d_types_methods["image"]:
@@ -452,6 +484,15 @@ def scale_feature_set(X):
     )
 
 
+def scale_all(X):
+    return {
+        subset: {
+            method: scale_feature_set(_X) if method != "tfidf" else _X
+            for method, _X in X[subset].items()
+        } for subset in X.keys()
+    }
+
+
 def reduce_components(X, reducer_fitted=None, n_components=0.95, random_state=42):
     X = scale_feature_set(X)
     if reducer_fitted:
@@ -468,6 +509,41 @@ def reduce_components(X, reducer_fitted=None, n_components=0.95, random_state=42
     )
     return X_reduced, reducer
 
+
+def reduce_all(X, n_components=0.95, random_state=42):
+    reducers = {}
+    X_reduced = {subset: {} for subset in X.keys()}
+    for method in d_types_methods["text"] + d_types_methods["image"]:
+        if method == "tfidf":
+            for subset in X.keys(): X_reduced[subset][method] = X[subset][method]
+            continue
+
+        X_reduced["train"][method], reducers[method] = reduce_components(X["train"][method], n_components=n_components, random_state=random_state)
+
+        X_reduced["test"][method], _ = reduce_components(X["test"][method], reducer_fitted=reducers[method])
+
+    return X_reduced
+
+
+def add_all_feature_combos(X, scale=False):
+    for subset in X.keys():
+        X_combos = combine_features_all(X[subset], scale=scale)
+
+        X[subset].update(X_combos)
+    return X
+
+def encode_labels(y, target):
+    le = LabelEncoder()
+
+    target_enc = f"{target}_encoded"
+
+    y["train"][target_enc] = le.fit_transform(y["train"][target])
+    y["test"][target_enc] = le.transform(y["test"][target])
+
+    for label, encoding in zip(le.classes_, le.transform(le.classes_)):
+        print(f"{encoding} --> {label}")
+
+    return y, target_enc, le
 
 # EVALUATE SCOREBOARD
 
@@ -604,7 +680,6 @@ def plot_best_by_data_type(df, metric, palette, top_n=5, lim=None, step=None):
         if subset.empty:
             continue
 
-
         top_n_set = subset.sort_values(metric, ascending=metric in metrics_r and metric != "r2").head(top_n)
         top_n_set["pair"] = top_n_set["model"] + " w/ " + top_n_set["features"]
 
@@ -626,6 +701,7 @@ def plot_best_by_data_type(df, metric, palette, top_n=5, lim=None, step=None):
         plt.tight_layout()
         plt.show()
 
+
 def evaluate(y_true, y_pred, metrics):
     scores = {}
     for metric, get_metric_score in metrics.items():
@@ -634,6 +710,7 @@ def evaluate(y_true, y_pred, metrics):
         if metric == "rmse": metric_score = np.sqrt(metric_score)
         scores[metric] = metric_score
     return scores
+
 
 def plot_confusion_matrix(cm, le, model_name, features):
     # Normalize confusion matrix by rows (true labels)
@@ -677,6 +754,7 @@ def plot_confusion_matrix(cm, le, model_name, features):
     plt.tight_layout()
     plt.show()
 
+
 def autopct_with_counts(values):
     def inner_autopct(pct):
         total = sum(values)
@@ -687,7 +765,6 @@ def autopct_with_counts(values):
 
 
 def plot_pie(ax, values, label_prefixes, class_name, reverse=False):
-
     labels = [f"Predicted as {class_name}", f"Not Predicted as {class_name}"]
     if reverse:
         labels = reversed(labels)
