@@ -5,6 +5,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import seaborn as sns
 import os
+import time
 from itertools import product
 
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, max_error, \
@@ -381,7 +382,9 @@ def plot_prediction_scores(scores, model, target, features):
 def run_cv(model_name, model_class, best_params, folds, metrics, X, y, method, target, enable_plots=True):
     if best_params:
         if (method, target) not in best_params: return
-        model = model_class(**best_params[(method, target)])
+        _best_params = best_params[(method, target)]["params"]
+
+        model = model_class(**_best_params)
     else:
         model = model_class()
     scores = cross_validation(model, folds, metrics, X, y)
@@ -428,9 +431,9 @@ def run_cv_all_2(model_name, model_class, best_params, folds, metrics, X, y, ena
 
 ## HYPERPARAMETER TUNING
 
-def hyperparameter_tuning(model_class, param_grid, folds, metrics, X, y, deciding_metric, verbose=False):
+def hyperparameter_tuning(model_class, param_grid, folds, metrics, X, y, deciding_metric):
+    start_time = time.time()
     param_scores = []
-
     for params in ParameterGrid(param_grid):
         model = model_class(**params)
         s = cross_validation(model, folds, metrics, X, y)
@@ -439,11 +442,13 @@ def hyperparameter_tuning(model_class, param_grid, folds, metrics, X, y, decidin
     calc_best = max if deciding_metric == "r2" or deciding_metric in metrics_c else min
     best_params, best_score = calc_best(param_scores, key=lambda x: x[1])
 
-    if verbose:
-        print(f"✅ Best params: {best_params}")
-        print(f"🎯 Best {deciding_metric.upper()}: {best_score:.4f}")
+    execution_time = time.time() - start_time
 
-    return best_params
+    return {
+        "params": best_params,
+        deciding_metric: best_score,
+        "time": execution_time,
+    }
 
 
 def run_hp_all(model_class, param_grid, folds, metrics, X, y, deciding_metric, verbose=False):
@@ -461,6 +466,87 @@ def run_hp_all(model_class, param_grid, folds, metrics, X, y, deciding_metric, v
         #
         #         if verbose: print(f"\nFeatures: {method} | Target: {target}")
         #         model_best_params[(method, target)] = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y, deciding_metric, verbose)
+
+    return model_best_params
+
+def get_column_width(values):
+    values = list(map(str, values))
+    return len(max(values, key=len))
+
+def get_column_widths(targets, feature_sets, deciding_metric, param_grid):
+    column_widths = {
+        "target": get_column_width(targets + ["target"]),
+        "feature_set": get_column_width(feature_sets + ["feature_set"]),
+        deciding_metric: get_column_width([deciding_metric, "0.0000"]),
+    }
+
+    for key, values in param_grid.items():
+        if len(values) > 1:
+            column_widths[key] = get_column_width(values + [key])
+
+    return column_widths
+
+def print_row(column_widths, values, col_divider="|", padding_char=" "):
+    for col, width in column_widths.items():
+        value = str(values[col])
+        padding = width - len(value) + 1
+        print(col_divider + (padding_char * padding) + value, end=padding_char)
+    print(col_divider)
+
+def print_row_divider(column_widths):
+    print_row(
+        column_widths,
+        {col: "" for col in column_widths.keys()},
+        col_divider="+",
+        padding_char="-"
+    )
+
+def print_row_header(column_widths):
+    print_row_divider(column_widths)
+    print_row(column_widths, {header: header for header in column_widths.keys()})
+    print_row_divider(column_widths)
+
+def get_print_values(feature_set, target, deciding_metric, hp_result):
+    print_values = hp_result["params"].copy()
+    print_values["target"] = target
+    print_values["feature_set"] = feature_set
+    print_values[deciding_metric] = f"{hp_result[deciding_metric]:.4f}"
+    return print_values
+
+def print_best_params(column_widths, best_params, deciding_metric):
+    print_row_header(column_widths)
+    for (method, target), hp_result in best_params.items():
+        print_row(column_widths, get_print_values(method, target, deciding_metric, hp_result))
+    print_row_divider(column_widths)
+
+def fmt_time(seconds):
+    time_str = ""
+    min, sec = divmod(seconds, 60)
+    hour, min = divmod(min, 60)
+    if hour > 0: time_str += f"{int(hour)}h "
+    if min > 0: time_str += f"{int(min)}m "
+    time_str += f"{int(sec)}s"
+    return time_str
+
+def get_execution_time(best_params):
+    return fmt_time(sum([hp_result["time"] for hp_result in best_params.values()]))
+
+def run_hp_all2(model_class, param_grid, folds, metrics, X, y, deciding_metric, column_widths, verbose=False):
+    model_best_params = {}
+
+    if verbose: print_row_header(column_widths)
+
+    execution_time = 0
+    for target, _y in y.items():
+        for method, _X in X.items():
+            hp_result = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y, deciding_metric)
+            model_best_params[(method, target)] = hp_result.copy()
+
+            execution_time += hp_result["time"]
+            if verbose: print_row(column_widths, get_print_values(method, target, deciding_metric, hp_result))
+
+    if verbose: print_row_divider(column_widths)
+    if verbose: print(f"Finished in {fmt_time(execution_time)}")
 
     return model_best_params
 

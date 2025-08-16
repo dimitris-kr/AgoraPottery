@@ -1,529 +1,727 @@
 {
   "LogisticRegression": {
     "('tfidf', 'HistoricalPeriod_encoded')": {
-      "C": 1,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "lbfgs"
+      "params": {
+        "C": 1,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "lbfgs"
+      },
+      "accuracy": 0.7836019311845506,
+      "time": 1.5882384777069092
     },
     "('bert', 'HistoricalPeriod_encoded')": {
-      "C": 0.01,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "lbfgs"
+      "params": {
+        "C": 0.01,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "lbfgs"
+      },
+      "accuracy": 0.7178498572011422,
+      "time": 48.947603940963745
     },
     "('cannyhog', 'HistoricalPeriod_encoded')": {
-      "C": 0.01,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "lbfgs"
+      "params": {
+        "C": 0.01,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "lbfgs"
+      },
+      "accuracy": 0.6765639874881002,
+      "time": 312.07603001594543
     },
     "('resnet', 'HistoricalPeriod_encoded')": {
-      "C": 0.01,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "lbfgs"
+      "params": {
+        "C": 0.01,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "lbfgs"
+      },
+      "accuracy": 0.6835271317829458,
+      "time": 251.84844946861267
     },
     "('vit', 'HistoricalPeriod_encoded')": {
-      "C": 0.1,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "lbfgs"
+      "params": {
+        "C": 0.1,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "lbfgs"
+      },
+      "accuracy": 0.6928362573099415,
+      "time": 43.86311364173889
     },
     "('tfidf + cannyhog', 'HistoricalPeriod_encoded')": {
-      "C": 0.01,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "lbfgs"
+      "params": {
+        "C": 0.01,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "lbfgs"
+      },
+      "accuracy": 0.7958282333741331,
+      "time": 374.31734561920166
     },
     "('tfidf + resnet', 'HistoricalPeriod_encoded')": {
-      "C": 0.01,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "lbfgs"
+      "params": {
+        "C": 0.01,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "lbfgs"
+      },
+      "accuracy": 0.8010607915136679,
+      "time": 313.5684983730316
     },
     "('tfidf + vit', 'HistoricalPeriod_encoded')": {
-      "C": 0.01,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "liblinear"
+      "params": {
+        "C": 0.01,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "liblinear"
+      },
+      "accuracy": 0.8062865497076025,
+      "time": 80.26882743835449
     },
     "('bert + cannyhog', 'HistoricalPeriod_encoded')": {
-      "C": 0.01,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "lbfgs"
+      "params": {
+        "C": 0.01,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "lbfgs"
+      },
+      "accuracy": 0.7515979872161023,
+      "time": 513.8907022476196
     },
     "('bert + resnet', 'HistoricalPeriod_encoded')": {
-      "C": 0.01,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "lbfgs"
+      "params": {
+        "C": 0.01,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "lbfgs"
+      },
+      "accuracy": 0.7475214198286413,
+      "time": 396.59501218795776
     },
     "('bert + vit', 'HistoricalPeriod_encoded')": {
-      "C": 0.01,
-      "class_weight": null,
-      "max_iter": 5000,
-      "random_state": 42,
-      "solver": "lbfgs"
+      "params": {
+        "C": 0.01,
+        "class_weight": null,
+        "max_iter": 5000,
+        "random_state": 42,
+        "solver": "lbfgs"
+      },
+      "accuracy": 0.7539167686658506,
+      "time": 173.28612327575684
     }
   },
   "KNN": {
     "('tfidf', 'HistoricalPeriod_encoded')": {
-      "metric": "cosine",
-      "n_neighbors": 5,
-      "weights": "distance"
+      "params": {
+        "metric": "cosine",
+        "n_neighbors": 5,
+        "weights": "distance"
+      },
+      "accuracy": 0.7865123079015368,
+      "time": 7.531473875045776
     },
     "('bert', 'HistoricalPeriod_encoded')": {
-      "metric": "manhattan",
-      "n_neighbors": 3,
-      "weights": "distance"
+      "params": {
+        "metric": "manhattan",
+        "n_neighbors": 3,
+        "weights": "distance"
+      },
+      "accuracy": 0.7143716850265198,
+      "time": 6.714940786361694
     },
     "('cannyhog', 'HistoricalPeriod_encoded')": {
-      "metric": "euclidean",
-      "n_neighbors": 9,
-      "weights": "distance"
+      "params": {
+        "metric": "euclidean",
+        "n_neighbors": 9,
+        "weights": "distance"
+      },
+      "accuracy": 0.686437508499932,
+      "time": 6.3954668045043945
     },
     "('resnet', 'HistoricalPeriod_encoded')": {
-      "metric": "cosine",
-      "n_neighbors": 3,
-      "weights": "distance"
+      "params": {
+        "metric": "cosine",
+        "n_neighbors": 3,
+        "weights": "distance"
+      },
+      "accuracy": 0.6806303549571604,
+      "time": 7.00216269493103
     },
     "('vit', 'HistoricalPeriod_encoded')": {
-      "metric": "euclidean",
-      "n_neighbors": 7,
-      "weights": "distance"
+      "params": {
+        "metric": "euclidean",
+        "n_neighbors": 7,
+        "weights": "distance"
+      },
+      "accuracy": 0.6870053039575683,
+      "time": 6.2962965965271
     },
     "('tfidf + cannyhog', 'HistoricalPeriod_encoded')": {
-      "metric": "cosine",
-      "n_neighbors": 3,
-      "weights": "distance"
+      "params": {
+        "metric": "cosine",
+        "n_neighbors": 3,
+        "weights": "distance"
+      },
+      "accuracy": 0.7958146334829321,
+      "time": 8.970367670059204
     },
     "('tfidf + resnet', 'HistoricalPeriod_encoded')": {
-      "metric": "cosine",
-      "n_neighbors": 5,
-      "weights": "distance"
+      "params": {
+        "metric": "cosine",
+        "n_neighbors": 5,
+        "weights": "distance"
+      },
+      "accuracy": 0.7993064055487556,
+      "time": 9.929355382919312
     },
     "('tfidf + vit', 'HistoricalPeriod_encoded')": {
-      "metric": "cosine",
-      "n_neighbors": 5,
-      "weights": "distance"
+      "params": {
+        "metric": "cosine",
+        "n_neighbors": 5,
+        "weights": "distance"
+      },
+      "accuracy": 0.8045423636610908,
+      "time": 9.037354230880737
     },
     "('bert + cannyhog', 'HistoricalPeriod_encoded')": {
-      "metric": "cosine",
-      "n_neighbors": 9,
-      "weights": "distance"
+      "params": {
+        "metric": "cosine",
+        "n_neighbors": 9,
+        "weights": "distance"
+      },
+      "accuracy": 0.7772099823201415,
+      "time": 8.587048053741455
     },
     "('bert + resnet', 'HistoricalPeriod_encoded')": {
-      "metric": "cosine",
-      "n_neighbors": 7,
-      "weights": "distance"
+      "params": {
+        "metric": "cosine",
+        "n_neighbors": 7,
+        "weights": "distance"
+      },
+      "accuracy": 0.7760505915952672,
+      "time": 8.942845821380615
     },
     "('bert + vit', 'HistoricalPeriod_encoded')": {
-      "metric": "cosine",
-      "n_neighbors": 7,
-      "weights": "distance"
+      "params": {
+        "metric": "cosine",
+        "n_neighbors": 7,
+        "weights": "distance"
+      },
+      "accuracy": 0.7801271589827282,
+      "time": 8.246018409729004
     }
   },
   "RandomForest": {
     "('tfidf', 'HistoricalPeriod_encoded')": {
-      "class_weight": null,
-      "max_depth": null,
-      "max_features": "sqrt",
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": null,
+        "max_depth": null,
+        "max_features": "sqrt",
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.788249694002448,
+      "time": 13.261589765548706
     },
     "('bert', 'HistoricalPeriod_encoded')": {
-      "class_weight": "balanced",
-      "max_depth": 10,
-      "max_features": "sqrt",
-      "min_samples_leaf": 4,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": "balanced",
+        "max_depth": 10,
+        "max_features": "sqrt",
+        "min_samples_leaf": 4,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.6753569971440229,
+      "time": 20.422142505645752
     },
     "('cannyhog', 'HistoricalPeriod_encoded')": {
-      "class_weight": null,
-      "max_depth": 10,
-      "max_features": "sqrt",
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": null,
+        "max_depth": 10,
+        "max_features": "sqrt",
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.6876138990888073,
+      "time": 20.754955291748047
     },
     "('resnet', 'HistoricalPeriod_encoded')": {
-      "class_weight": null,
-      "max_depth": 10,
-      "max_features": "sqrt",
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": null,
+        "max_depth": 10,
+        "max_features": "sqrt",
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.6870189038487693,
+      "time": 17.233872652053833
     },
     "('vit', 'HistoricalPeriod_encoded')": {
-      "class_weight": null,
-      "max_depth": 10,
-      "max_features": "sqrt",
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": null,
+        "max_depth": 10,
+        "max_features": "sqrt",
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.6893410852713179,
+      "time": 15.520955801010132
     },
     "('tfidf + cannyhog', 'HistoricalPeriod_encoded')": {
-      "class_weight": null,
-      "max_depth": null,
-      "max_features": "sqrt",
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": null,
+        "max_depth": null,
+        "max_features": "sqrt",
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.7725384196926426,
+      "time": 20.957173585891724
     },
     "('tfidf + resnet', 'HistoricalPeriod_encoded')": {
-      "class_weight": null,
-      "max_depth": null,
-      "max_features": "sqrt",
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": null,
+        "max_depth": null,
+        "max_features": "sqrt",
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.7795253637970897,
+      "time": 17.827787160873413
     },
     "('tfidf + vit', 'HistoricalPeriod_encoded')": {
-      "class_weight": null,
-      "max_depth": null,
-      "max_features": "sqrt",
-      "min_samples_leaf": 2,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": null,
+        "max_depth": null,
+        "max_features": "sqrt",
+        "min_samples_leaf": 2,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.7806847545219638,
+      "time": 16.257860898971558
     },
     "('bert + cannyhog', 'HistoricalPeriod_encoded')": {
-      "class_weight": null,
-      "max_depth": null,
-      "max_features": "sqrt",
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": null,
+        "max_depth": null,
+        "max_features": "sqrt",
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.7341391268869849,
+      "time": 25.13907289505005
     },
     "('bert + resnet', 'HistoricalPeriod_encoded')": {
-      "class_weight": "balanced",
-      "max_depth": null,
-      "max_features": "sqrt",
-      "min_samples_leaf": 4,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": "balanced",
+        "max_depth": null,
+        "max_features": "sqrt",
+        "min_samples_leaf": 4,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.7277607779137767,
+      "time": 22.05450201034546
     },
     "('bert + vit', 'HistoricalPeriod_encoded')": {
-      "class_weight": null,
-      "max_depth": null,
-      "max_features": "sqrt",
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "class_weight": null,
+        "max_depth": null,
+        "max_features": "sqrt",
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "accuracy": 0.7271861825105399,
+      "time": 21.769073963165283
     }
   },
   "XGBoost": {
     "('tfidf', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 3,
-      "n_estimators": 300,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "n_estimators": 300,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 1.0
+      },
+      "accuracy": 0.7958078335373318,
+      "time": 185.8935136795044
     },
     "('bert', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 1.0,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 300,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 300,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "accuracy": 0.7161124711002312,
+      "time": 416.264431476593
     },
     "('cannyhog', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 1.0,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 300,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "accuracy": 0.6812151502787978,
+      "time": 185.09810662269592
     },
     "('resnet', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 1.0,
-      "device": "cuda",
-      "learning_rate": 0.05,
-      "max_depth": 3,
-      "n_estimators": 300,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 1.0,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "n_estimators": 300,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "accuracy": 0.6858595131238949,
+      "time": 248.96643471717834
     },
     "('vit', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.05,
-      "max_depth": 3,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 1.0,
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "n_estimators": 300,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "accuracy": 0.6928294573643411,
+      "time": 174.6511902809143
     },
     "('tfidf + cannyhog', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 300,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 1.0,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 300,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 1.0
+      },
+      "accuracy": 0.7940704474364204,
+      "time": 379.9214131832123
     },
     "('tfidf + resnet', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 1.0,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 300,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 1.0,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 1.0
+      },
+      "accuracy": 0.8010471916224671,
+      "time": 458.53989005088806
     },
     "('tfidf + vit', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 1.0,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 3,
-      "n_estimators": 300,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 3,
+        "n_estimators": 300,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "accuracy": 0.8016217870257037,
+      "time": 360.44778752326965
     },
     "('bert + cannyhog', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 1.0,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 300,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 300,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "accuracy": 0.7300761593907248,
+      "time": 629.534818649292
     },
     "('bert + resnet', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 300,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "n_estimators": 300,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "accuracy": 0.7329899360805113,
+      "time": 728.0649390220642
     },
     "('bert + vit', 'HistoricalPeriod_encoded')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 300,
-      "n_jobs": -1,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "n_estimators": 300,
+        "n_jobs": -1,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "accuracy": 0.7370529035767714,
+      "time": 619.1546730995178
     }
   },
   "LightGBM": {
     "('tfidf', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": -1,
-      "n_estimators": 300,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 63,
-      "random_state": 42,
-      "subsample": 0.8,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": -1,
+        "n_estimators": 300,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 63,
+        "random_state": 42,
+        "subsample": 0.6,
+        "verbose": -1
+      },
+      "accuracy": 0.7818611451108392,
+      "time": 1140.008951663971
     },
     "('bert', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": 10,
-      "n_estimators": 300,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 31,
-      "random_state": 42,
-      "subsample": 0.6,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": 10,
+        "n_estimators": 300,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 31,
+        "random_state": 42,
+        "subsample": 0.6,
+        "verbose": -1
+      },
+      "accuracy": 0.7172786617707059,
+      "time": 1330.4197270870209
     },
     "('cannyhog', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": 10,
-      "n_estimators": 100,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 31,
-      "random_state": 42,
-      "subsample": 0.6,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": 10,
+        "n_estimators": 100,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 31,
+        "random_state": 42,
+        "subsample": 0.8,
+        "verbose": -1
+      },
+      "accuracy": 0.6294301645586835,
+      "time": 974.8288717269897
     },
     "('resnet', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": -1,
-      "n_estimators": 300,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 31,
-      "random_state": 42,
-      "subsample": 0.8,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": 10,
+        "n_estimators": 300,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 31,
+        "random_state": 42,
+        "subsample": 0.6,
+        "verbose": -1
+      },
+      "accuracy": 0.6375798993608052,
+      "time": 1005.2818686962128
     },
     "('vit', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 63,
-      "random_state": 42,
-      "subsample": 0.6,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 63,
+        "random_state": 42,
+        "subsample": 0.6,
+        "verbose": -1
+      },
+      "accuracy": 0.659091527267782,
+      "time": 958.2991032600403
     },
     "('tfidf + cannyhog', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": -1,
-      "n_estimators": 300,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 31,
-      "random_state": 42,
-      "subsample": 0.6,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": -1,
+        "n_estimators": 300,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 31,
+        "random_state": 42,
+        "subsample": 0.8,
+        "verbose": -1
+      },
+      "accuracy": 0.7905752753977968,
+      "time": 1387.8962790966034
     },
     "('tfidf + resnet', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": 10,
-      "n_estimators": 300,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 31,
-      "random_state": 42,
-      "subsample": 0.8,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": 10,
+        "n_estimators": 300,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 31,
+        "random_state": 42,
+        "subsample": 0.8,
+        "verbose": -1
+      },
+      "accuracy": 0.7952230382156942,
+      "time": 1471.583292722702
     },
     "('tfidf + vit', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": 10,
-      "n_estimators": 300,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 31,
-      "random_state": 42,
-      "subsample": 0.6,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": 10,
+        "n_estimators": 300,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 31,
+        "random_state": 42,
+        "subsample": 0.6,
+        "verbose": -1
+      },
+      "accuracy": 0.800452196382429,
+      "time": 1395.9561350345612
     },
     "('bert + cannyhog', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": 10,
-      "n_estimators": 300,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 31,
-      "random_state": 42,
-      "subsample": 0.8,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": -1,
+        "n_estimators": 300,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 31,
+        "random_state": 42,
+        "subsample": 0.8,
+        "verbose": -1
+      },
+      "accuracy": 0.7434550523595811,
+      "time": 1572.5358355045319
     },
     "('bert + resnet', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": 10,
-      "n_estimators": 300,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 63,
-      "random_state": 42,
-      "subsample": 0.8,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": -1,
+        "n_estimators": 300,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 63,
+        "random_state": 42,
+        "subsample": 0.6,
+        "verbose": -1
+      },
+      "accuracy": 0.7475146198830409,
+      "time": 1673.8660991191864
     },
     "('bert + vit', 'HistoricalPeriod_encoded')": {
-      "boosting_type": "gbdt",
-      "class_weight": "balanced",
-      "device_type": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": -1,
-      "n_estimators": 300,
-      "n_gpu": 0,
-      "n_jobs": -1,
-      "num_leaves": 63,
-      "random_state": 42,
-      "subsample": 0.6,
-      "verbose": -1
+      "params": {
+        "boosting_type": "gbdt",
+        "class_weight": "balanced",
+        "device_type": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": -1,
+        "n_estimators": 300,
+        "n_gpu": 0,
+        "n_jobs": -1,
+        "num_leaves": 63,
+        "random_state": 42,
+        "subsample": 0.6,
+        "verbose": -1
+      },
+      "accuracy": 0.7562423500611994,
+      "time": 1544.6197419166565
     }
   }
 }
