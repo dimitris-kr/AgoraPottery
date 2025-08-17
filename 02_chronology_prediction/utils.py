@@ -351,7 +351,7 @@ def plot_prediction_scores(scores, model, target, features):
         subplots = subplots_c
     else:
         return
-
+    plt.figure(figsize=(8 * len(subplots), 5))
     for idx, subplot in enumerate(subplots):
         plt.subplot(1, len(subplots), idx + 1)
 
@@ -794,7 +794,7 @@ def evaluate(y_true, y_pred, metrics):
         metric_score = get_metric_score(y_true, y_pred, **metric_params.get(metric, {}))
 
         if metric == "rmse": metric_score = np.sqrt(metric_score)
-        scores[metric] = metric_score
+        scores[metric] = float(metric_score)
     return scores
 
 
