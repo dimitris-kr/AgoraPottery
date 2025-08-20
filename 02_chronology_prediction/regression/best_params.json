@@ -1,804 +1,1200 @@
 {
   "Ridge": {
     "('tfidf', 'StartYear')": {
-      "alpha": 1,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "random_state": 42
+      },
+      "mae": 38.29852513880538,
+      "time": 0.5220236778259277
     },
     "('bert', 'StartYear')": {
-      "alpha": 10,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 45.64884485560236,
+      "time": 0.4377138614654541
     },
     "('cannyhog', 'StartYear')": {
-      "alpha": 1,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 53.73474819416943,
+      "time": 0.39259791374206543
     },
     "('resnet', 'StartYear')": {
-      "alpha": 10,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 51.59097387636217,
+      "time": 0.46833276748657227
     },
     "('vit', 'StartYear')": {
-      "alpha": 1,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 51.6154374745435,
+      "time": 0.38124799728393555
     },
     "('tfidf + cannyhog', 'StartYear')": {
-      "alpha": 1,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 37.97841180857448,
+      "time": 0.8767995834350586
     },
     "('tfidf + resnet', 'StartYear')": {
-      "alpha": 1,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 37.33916172482945,
+      "time": 1.013045072555542
     },
     "('tfidf + vit', 'StartYear')": {
-      "alpha": 1,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 37.785047729527506,
+      "time": 0.8418095111846924
     },
     "('bert + cannyhog', 'StartYear')": {
-      "alpha": 10,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 45.878538800350746,
+      "time": 0.7078208923339844
     },
     "('bert + resnet', 'StartYear')": {
-      "alpha": 10,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 44.810461102662195,
+      "time": 0.8852548599243164
     },
     "('bert + vit', 'StartYear')": {
-      "alpha": 10,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 45.38206481276404,
+      "time": 0.6956677436828613
     },
     "('tfidf', 'YearRange')": {
-      "alpha": 1,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "random_state": 42
+      },
+      "mae": 10.901693846637786,
+      "time": 0.5142951011657715
     },
     "('bert', 'YearRange')": {
-      "alpha": 100,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 11.174783723861516,
+      "time": 0.44954776763916016
     },
     "('cannyhog', 'YearRange')": {
-      "alpha": 100,
-      "random_state": 42
+      "params": {
+        "alpha": 10000,
+        "random_state": 42
+      },
+      "mae": 12.08248478841757,
+      "time": 0.3967311382293701
     },
     "('resnet', 'YearRange')": {
-      "alpha": 100,
-      "random_state": 42
+      "params": {
+        "alpha": 10000,
+        "random_state": 42
+      },
+      "mae": 11.892855916194517,
+      "time": 0.4619302749633789
     },
     "('vit', 'YearRange')": {
-      "alpha": 10,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 11.86205238181321,
+      "time": 0.37978363037109375
     },
     "('tfidf + cannyhog', 'YearRange')": {
-      "alpha": 10,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 10.974739934856721,
+      "time": 0.8730571269989014
     },
     "('tfidf + resnet', 'YearRange')": {
-      "alpha": 10,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 10.870399929189492,
+      "time": 1.0057287216186523
     },
     "('tfidf + vit', 'YearRange')": {
-      "alpha": 10,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 10.870758430517542,
+      "time": 0.8421170711517334
     },
     "('bert + cannyhog', 'YearRange')": {
-      "alpha": 100,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 11.4205544046971,
+      "time": 0.7268688678741455
     },
     "('bert + resnet', 'YearRange')": {
-      "alpha": 100,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 11.34396392595709,
+      "time": 0.8702642917633057
     },
     "('bert + vit', 'YearRange')": {
-      "alpha": 100,
-      "random_state": 42
+      "params": {
+        "alpha": 1000,
+        "random_state": 42
+      },
+      "mae": 11.287068934034538,
+      "time": 0.714500904083252
     }
   },
   "Lasso": {
     "('tfidf', 'StartYear')": {
-      "alpha": 0.01,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 0.01,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 39.13750073052918,
+      "time": 1.0915322303771973
     },
     "('bert', 'StartYear')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 45.80525876948022,
+      "time": 0.37783217430114746
     },
     "('cannyhog', 'StartYear')": {
-      "alpha": 0.0001,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 53.59215215659849,
+      "time": 0.35587143898010254
     },
     "('resnet', 'StartYear')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 52.208127729143975,
+      "time": 2.1712498664855957
     },
     "('vit', 'StartYear')": {
-      "alpha": 0.01,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 51.66397811775264,
+      "time": 0.34836459159851074
     },
     "('tfidf + cannyhog', 'StartYear')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 37.85031886248089,
+      "time": 6.584754228591919
     },
     "('tfidf + resnet', 'StartYear')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 37.77877088483787,
+      "time": 9.749702215194702
     },
     "('tfidf + vit', 'StartYear')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 37.89974218852719,
+      "time": 6.710902452468872
     },
     "('bert + cannyhog', 'StartYear')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 45.258600235092004,
+      "time": 0.7177653312683105
     },
     "('bert + resnet', 'StartYear')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 45.09161991465449,
+      "time": 2.9377079010009766
     },
     "('bert + vit', 'StartYear')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 45.069086418364414,
+      "time": 0.7277994155883789
     },
     "('tfidf', 'YearRange')": {
-      "alpha": 0.01,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 0.01,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 10.748688878810544,
+      "time": 0.620774507522583
     },
     "('bert', 'YearRange')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 0.1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 11.27018345444843,
+      "time": 0.3594627380371094
     },
     "('cannyhog', 'YearRange')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 12.126476441680698,
+      "time": 0.3423013687133789
     },
     "('resnet', 'YearRange')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 11.993346744756172,
+      "time": 1.517374038696289
     },
     "('vit', 'YearRange')": {
-      "alpha": 0.01,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 11.923519144870824,
+      "time": 0.32815074920654297
     },
     "('tfidf + cannyhog', 'YearRange')": {
-      "alpha": 0.01,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 0.1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 11.121711697736279,
+      "time": 4.922067403793335
     },
     "('tfidf + resnet', 'YearRange')": {
-      "alpha": 0.01,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 0.1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 11.061773550456468,
+      "time": 7.810487747192383
     },
     "('tfidf + vit', 'YearRange')": {
-      "alpha": 0.01,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 0.1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 10.971998014110293,
+      "time": 4.993244171142578
     },
     "('bert + cannyhog', 'YearRange')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 0.1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 11.515431940433967,
+      "time": 0.6567385196685791
     },
     "('bert + resnet', 'YearRange')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 0.1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 11.661829651746908,
+      "time": 1.8808486461639404
     },
     "('bert + vit', 'YearRange')": {
-      "alpha": 0.1,
-      "max_iter": 10000,
-      "random_state": 42
+      "params": {
+        "alpha": 0.1,
+        "max_iter": 10000,
+        "random_state": 42
+      },
+      "mae": 11.37615423077376,
+      "time": 0.6546545028686523
     }
   },
   "RandomForest": {
     "('tfidf', 'StartYear')": {
-      "max_depth": null,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 35.63894380128293,
+      "time": 14.089210510253906
     },
     "('bert', 'StartYear')": {
-      "max_depth": 20,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 48.37830524255271,
+      "time": 188.60000228881836
     },
     "('cannyhog', 'StartYear')": {
-      "max_depth": null,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 48.1876879328549,
+      "time": 215.8861424922943
     },
     "('resnet', 'StartYear')": {
-      "max_depth": 20,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 48.08573240539123,
+      "time": 94.62978458404541
     },
     "('vit', 'StartYear')": {
-      "max_depth": 20,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 48.17377549153629,
+      "time": 58.83781027793884
     },
     "('tfidf + cannyhog', 'StartYear')": {
-      "max_depth": null,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 35.7193623314585,
+      "time": 374.64405727386475
     },
     "('tfidf + resnet', 'StartYear')": {
-      "max_depth": null,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 35.58695276344931,
+      "time": 172.82829689979553
     },
     "('tfidf + vit', 'StartYear')": {
-      "max_depth": null,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 35.33447775567795,
+      "time": 107.42605805397034
     },
     "('bert + cannyhog', 'StartYear')": {
-      "max_depth": 20,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 47.42308682206415,
+      "time": 498.08349442481995
     },
     "('bert + resnet', 'StartYear')": {
-      "max_depth": 20,
-      "min_samples_leaf": 2,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 2,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 46.82413611762375,
+      "time": 309.70556139945984
     },
     "('bert + vit', 'StartYear')": {
-      "max_depth": 20,
-      "min_samples_leaf": 2,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 2,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 46.861527384867316,
+      "time": 276.79145884513855
     },
     "('tfidf', 'YearRange')": {
-      "max_depth": 20,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 10.547472484129388,
+      "time": 13.320779085159302
     },
     "('bert', 'YearRange')": {
-      "max_depth": null,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 11.20901437702784,
+      "time": 175.99025964736938
     },
     "('cannyhog', 'YearRange')": {
-      "max_depth": 20,
-      "min_samples_leaf": 2,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 2,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 11.986044911323907,
+      "time": 202.83583784103394
     },
     "('resnet', 'YearRange')": {
-      "max_depth": 20,
-      "min_samples_leaf": 2,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 2,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 11.895015288739632,
+      "time": 90.37020444869995
     },
     "('vit', 'YearRange')": {
-      "max_depth": null,
-      "min_samples_leaf": 2,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 2,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 11.860711395052439,
+      "time": 56.51753830909729
     },
     "('tfidf + cannyhog', 'YearRange')": {
-      "max_depth": 20,
-      "min_samples_leaf": 2,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 2,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 10.562490769855026,
+      "time": 325.3411808013916
     },
     "('tfidf + resnet', 'YearRange')": {
-      "max_depth": null,
-      "min_samples_leaf": 2,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 2,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 10.500399933898006,
+      "time": 161.5638952255249
     },
     "('tfidf + vit', 'YearRange')": {
-      "max_depth": null,
-      "min_samples_leaf": 2,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 2,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 10.523154719906756,
+      "time": 108.36110329627991
     },
     "('bert + cannyhog', 'YearRange')": {
-      "max_depth": null,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 11.210211029835571,
+      "time": 514.534318447113
     },
     "('bert + resnet', 'YearRange')": {
-      "max_depth": 20,
-      "min_samples_leaf": 2,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": 20,
+        "min_samples_leaf": 2,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 11.221584869599784,
+      "time": 327.0905051231384
     },
     "('bert + vit', 'YearRange')": {
-      "max_depth": null,
-      "min_samples_leaf": 1,
-      "min_samples_split": 2,
-      "n_estimators": 100,
-      "n_jobs": -1,
-      "random_state": 42
+      "params": {
+        "max_depth": null,
+        "min_samples_leaf": 1,
+        "min_samples_split": 2,
+        "n_estimators": 100,
+        "n_jobs": -1,
+        "random_state": 42
+      },
+      "mae": 11.194928974568203,
+      "time": 289.1845073699951
     }
   },
   "XGBoost": {
     "('tfidf', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 36.336331025996074,
+      "time": 4.506568193435669
     },
     "('bert', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.05,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 46.260545866255626,
+      "time": 33.59537053108215
     },
     "('cannyhog', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 47.18677391489071,
+      "time": 103.51934456825256
     },
     "('resnet', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 47.225708160130615,
+      "time": 59.37807297706604
     },
     "('vit', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 47.1183874050614,
+      "time": 14.150594711303711
     },
     "('tfidf + cannyhog', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 35.85101552730059,
+      "time": 116.8440248966217
     },
     "('tfidf + resnet', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 35.854086382982764,
+      "time": 68.77511096000671
     },
     "('tfidf + vit', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 35.340410456611366,
+      "time": 20.133569955825806
     },
     "('bert + cannyhog', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 44.667759620337584,
+      "time": 185.28596711158752
     },
     "('bert + resnet', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 44.687788671677446,
+      "time": 125.22879600524902
     },
     "('bert + vit', 'StartYear')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 44.76021436787001,
+      "time": 57.40866231918335
     },
     "('tfidf', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 3,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 10.72487963498729,
+      "time": 4.102614402770996
     },
     "('bert', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.05,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 11.079896406533786,
+      "time": 33.274165391922
     },
     "('cannyhog', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 3,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 11.9383420928877,
+      "time": 100.93449544906616
     },
     "('resnet', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 3,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 11.89200752188069,
+      "time": 56.81107497215271
     },
     "('vit', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.05,
-      "max_depth": 3,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 3,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 11.831385327363913,
+      "time": 13.653343677520752
     },
     "('tfidf + cannyhog', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 10.690263602338193,
+      "time": 112.95199489593506
     },
     "('tfidf + resnet', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.05,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 10.710962764523426,
+      "time": 64.90553879737854
     },
     "('tfidf + vit', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.1,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 10.718875083238938,
+      "time": 19.653897523880005
     },
     "('bert + cannyhog', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.05,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.1,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 11.094946662747242,
+      "time": 178.5264332294464
     },
     "('bert + resnet', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.05,
-      "max_depth": 3,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 11.099771976987615,
+      "time": 119.6890881061554
     },
     "('bert + vit', 'YearRange')": {
-      "colsample_bytree": 0.8,
-      "device": "cuda",
-      "learning_rate": 0.05,
-      "max_depth": 6,
-      "n_estimators": 100,
-      "random_state": 42,
-      "subsample": 0.8,
-      "tree_method": "hist"
+      "params": {
+        "colsample_bytree": 0.8,
+        "learning_rate": 0.05,
+        "max_depth": 6,
+        "n_estimators": 100,
+        "random_state": 42,
+        "subsample": 0.8
+      },
+      "mae": 11.007214474965304,
+      "time": 57.0756299495697
     }
   },
   "LightGBM": {
     "('tfidf', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 36.11714792448186,
+      "time": 36.580631732940674
     },
     "('bert', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 46.26580502219182,
+      "time": 93.17984533309937
     },
     "('cannyhog', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 47.146607908085436,
+      "time": 168.98883414268494
     },
     "('resnet', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 46.951738682008965,
+      "time": 109.79773092269897
     },
     "('vit', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 46.51122880118699,
+      "time": 63.10444259643555
     },
     "('tfidf + cannyhog', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 35.06523567411729,
+      "time": 234.49290871620178
     },
     "('tfidf + resnet', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 34.884302292623815,
+      "time": 147.60113263130188
     },
     "('tfidf + vit', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 34.7558335367921,
+      "time": 91.12778639793396
     },
     "('bert + cannyhog', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 43.85967136468586,
+      "time": 321.0880858898163
     },
     "('bert + resnet', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 43.83251243163532,
+      "time": 223.56046676635742
     },
     "('bert + vit', 'StartYear')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 43.804313693035965,
+      "time": 156.14337396621704
     },
     "('tfidf', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 10.718941808768765,
+      "time": 37.01245427131653
     },
     "('bert', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 11.15678391393347,
+      "time": 92.8311619758606
     },
     "('cannyhog', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 12.007091414323224,
+      "time": 167.58442664146423
     },
     "('resnet', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.1,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 11.91169555220158,
+      "time": 109.76684546470642
     },
     "('vit', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 11.931116343387044,
+      "time": 63.34076714515686
     },
     "('tfidf + cannyhog', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 10.648965860932183,
+      "time": 231.52901935577393
     },
     "('tfidf + resnet', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": 20,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 10.688256949456932,
+      "time": 145.7924098968506
     },
     "('tfidf + vit', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 10.652174771319835,
+      "time": 89.9460928440094
     },
     "('bert + cannyhog', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.1,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 64,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": 20,
+        "n_estimators": 100,
+        "num_leaves": 64,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 11.161997874960388,
+      "time": 319.5894412994385
     },
     "('bert + resnet', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 10.996046333441921,
+      "time": 221.93521451950073
     },
     "('bert + vit', 'YearRange')": {
-      "device": "gpu",
-      "learning_rate": 0.05,
-      "max_depth": -1,
-      "n_estimators": 100,
-      "num_leaves": 31,
-      "random_state": 42,
-      "verbose": -1
+      "params": {
+        "device": "gpu",
+        "learning_rate": 0.05,
+        "max_depth": -1,
+        "n_estimators": 100,
+        "num_leaves": 31,
+        "random_state": 42,
+        "verbose": -1
+      },
+      "mae": 11.09948965412981,
+      "time": 155.8721146583557
     }
   }
 }

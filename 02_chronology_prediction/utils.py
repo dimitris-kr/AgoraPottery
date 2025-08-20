@@ -2,12 +2,17 @@ import json
 
 import pandas as pd
 import numpy as np
+from IPython.core.display_functions import display
+from lightgbm import LGBMRegressor
 from matplotlib import pyplot as plt
 import seaborn as sns
 import os
 import time
 from itertools import product
 
+from scipy.stats import norm
+from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
+from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, max_error, \
     accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
 from sklearn.model_selection import ParameterGrid
@@ -319,23 +324,26 @@ def plot_compare_feature_scores(model_scoreboard):
             bar_width = 0.6 / len(subplot['metrics'])
             offsets = [i - (len(subplot['metrics']) - 1) / 2 for i in range(len(subplot['metrics']))]
 
-            min_y = 0
-            max_y = 0
+            all_values = df[subplot['metrics']].to_numpy()
+            min_y = min(0, all_values.min() * 1.2)
+            max_y = subplot['ylim'] if 'ylim' in subplot else all_values.max() * 1.2
+
+            text_gap = (max_y - min_y) * 0.02
 
             for metric, color, offset in zip(subplot['metrics'], subplot['colors'], offsets):
                 bars = plt.bar(x + offset * bar_width, df[metric], width=bar_width, label=metric.upper(), color=color)
+
                 for bar in bars:
                     height = bar.get_height()
-                    plt.text(
-                        bar.get_x() + bar.get_width() / 2, height + 0.01, f"{height:.2f}", ha='center', va='bottom',
-                        fontsize=9, rotation=90)
-                max_y = max(max_y, df[metric].max())
-                min_y = min(min_y, df[metric].min())
+                    va = 'bottom' if height > 0 else 'top'
+                    pos_y = height + (text_gap if height > 0 else - text_gap)
+                    pos_x = bar.get_x() + bar.get_width() / 2
+                    plt.text(pos_x, pos_y, f"{height:.2f}", ha='center', va=va, fontsize=9, rotation=90)
 
             plt.axhline(0, color='gray', alpha=0.5, linestyle='--')
             plt.xticks(ticks=x, labels=df["features"], rotation=45, ha='right')
             plt.ylabel(subplot['ylabel'])
-            plt.ylim(min_y * 1.1, subplot['ylim'] if 'ylim' in subplot else max_y * 1.2)
+            plt.ylim(min_y, max_y)
             plt.title(', '.join(subplot['metrics']).upper(), fontsize="12")
             plt.legend()
             plt.grid(True)
@@ -344,7 +352,9 @@ def plot_compare_feature_scores(model_scoreboard):
         plt.tight_layout()
         plt.show()
 
+
 def plot_prediction_scores(scores, model, target, features):
+    print("\n")
     if set(scores.keys()).issubset(metrics_r.keys()):
         subplots = subplots_r
     elif set(scores.keys()).issubset(metrics_c.keys()):
@@ -364,7 +374,7 @@ def plot_prediction_scores(scores, model, target, features):
         for bar, val in zip(bars, values):
             plt.text(
                 val + 0.01,
-                bar.get_y() + bar.get_height()/2,
+                bar.get_y() + bar.get_height() / 2,
                 f"{val:.4f}",
                 va='center', fontsize=10
             )
@@ -376,6 +386,7 @@ def plot_prediction_scores(scores, model, target, features):
     plt.suptitle("Prediction Evaluation | " + plt_title(model, target, features), fontsize="12")
     plt.grid(axis='x', linestyle='--', alpha=0.6)
     plt.show()
+
 
 # RUN CROSS VALIDATION
 
@@ -397,28 +408,6 @@ def run_cv(model_name, model_class, best_params, folds, metrics, X, y, method, t
 # RUN CROSS VALIDATION FOR ALL FEATURE SETS AND TARGETS
 
 def run_cv_all(model_name, model_class, best_params, folds, metrics, X, y, enable_plots=True):
-    if enable_plots: print("Cross Validation Score Progression")
-    model_scoreboard = []
-    for target, _y in y["train"].items():
-        # Single Feature Sets
-        for method, _X in X["train"].items():
-            scores = run_cv(model_name, model_class, best_params, folds, metrics, _X, _y, method, target, enable_plots)
-            model_scoreboard.append(scores)
-
-        # Combined Feature Sets (Text+Image)
-        for text_method in d_types_methods["text"]:
-            for image_method in d_types_methods["image"]:
-                _X = combine_features([X["train"][text_method], X["train"][image_method]])
-                method = f"{text_method} + {image_method}"
-
-                scores = run_cv(model_name, model_class, best_params, folds, metrics, _X, _y, method, target,
-                                enable_plots)
-                model_scoreboard.append(scores)
-
-    return pd.DataFrame(model_scoreboard)
-
-
-def run_cv_all_2(model_name, model_class, best_params, folds, metrics, X, y, enable_plots=True):
     if enable_plots: print("Cross Validation Score Progression")
     model_scoreboard = []
     for target, _y in y.items():
@@ -451,33 +440,16 @@ def hyperparameter_tuning(model_class, param_grid, folds, metrics, X, y, decidin
     }
 
 
-def run_hp_all(model_class, param_grid, folds, metrics, X, y, deciding_metric, verbose=False):
-    model_best_params = {}
-    for target, _y in y.items():
-        for method, _X in X.items():
-            if verbose: print(f"\nFeatures: {method} | Target: {target}")
-            model_best_params[(method, target)] = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y,
-                                                                        deciding_metric, verbose)
-
-        # for text_method in d_types_methods["text"]:
-        #     for image_method in d_types_methods["image"]:
-        #         _X = combine_features([X[text_method], X[image_method]])
-        #         method = f"{text_method} + {image_method}"
-        #
-        #         if verbose: print(f"\nFeatures: {method} | Target: {target}")
-        #         model_best_params[(method, target)] = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y, deciding_metric, verbose)
-
-    return model_best_params
-
 def get_column_width(values):
     values = list(map(str, values))
     return len(max(values, key=len))
+
 
 def get_column_widths(targets, feature_sets, deciding_metric, param_grid):
     column_widths = {
         "target": get_column_width(targets + ["target"]),
         "feature_set": get_column_width(feature_sets + ["feature_set"]),
-        deciding_metric: get_column_width([deciding_metric, "0.0000"]),
+        deciding_metric: get_column_width([deciding_metric, "0000.0000"]),
     }
 
     for key, values in param_grid.items():
@@ -486,12 +458,14 @@ def get_column_widths(targets, feature_sets, deciding_metric, param_grid):
 
     return column_widths
 
+
 def print_row(column_widths, values, col_divider="|", padding_char=" "):
     for col, width in column_widths.items():
         value = str(values[col])
         padding = width - len(value) + 1
         print(col_divider + (padding_char * padding) + value, end=padding_char)
     print(col_divider)
+
 
 def print_row_divider(column_widths):
     print_row(
@@ -501,10 +475,12 @@ def print_row_divider(column_widths):
         padding_char="-"
     )
 
+
 def print_row_header(column_widths):
     print_row_divider(column_widths)
     print_row(column_widths, {header: header for header in column_widths.keys()})
     print_row_divider(column_widths)
+
 
 def get_print_values(feature_set, target, deciding_metric, hp_result):
     print_values = hp_result["params"].copy()
@@ -513,11 +489,16 @@ def get_print_values(feature_set, target, deciding_metric, hp_result):
     print_values[deciding_metric] = f"{hp_result[deciding_metric]:.4f}"
     return print_values
 
+
 def print_best_params(column_widths, best_params, deciding_metric):
     print_row_header(column_widths)
+    target_prev = ""
     for (method, target), hp_result in best_params.items():
+        if target_prev and target_prev != target: print_row_divider(column_widths)
         print_row(column_widths, get_print_values(method, target, deciding_metric, hp_result))
+        target_prev = target
     print_row_divider(column_widths)
+
 
 def fmt_time(seconds):
     time_str = ""
@@ -528,16 +509,20 @@ def fmt_time(seconds):
     time_str += f"{int(sec)}s"
     return time_str
 
+
 def get_execution_time(best_params):
     return fmt_time(sum([hp_result["time"] for hp_result in best_params.values()]))
 
-def run_hp_all2(model_class, param_grid, folds, metrics, X, y, deciding_metric, column_widths, verbose=False):
+
+def run_hp_all(model_class, param_grid, folds, metrics, X, y, deciding_metric, column_widths, verbose=False):
     model_best_params = {}
 
     if verbose: print_row_header(column_widths)
 
     execution_time = 0
+    target_prev = ""
     for target, _y in y.items():
+        if verbose and target_prev and target_prev != target: print_row_divider(column_widths)
         for method, _X in X.items():
             hp_result = hyperparameter_tuning(model_class, param_grid, folds, metrics, _X, _y, deciding_metric)
             model_best_params[(method, target)] = hp_result.copy()
@@ -545,6 +530,7 @@ def run_hp_all2(model_class, param_grid, folds, metrics, X, y, deciding_metric, 
             execution_time += hp_result["time"]
             if verbose: print_row(column_widths, get_print_values(method, target, deciding_metric, hp_result))
 
+        target_prev = target
     if verbose: print_row_divider(column_widths)
     if verbose: print(f"Finished in {fmt_time(execution_time)}")
 
@@ -604,7 +590,8 @@ def reduce_all(X, n_components=0.95, random_state=42):
             for subset in X.keys(): X_reduced[subset][method] = X[subset][method]
             continue
 
-        X_reduced["train"][method], reducers[method] = reduce_components(X["train"][method], n_components=n_components, random_state=random_state)
+        X_reduced["train"][method], reducers[method] = reduce_components(X["train"][method], n_components=n_components,
+                                                                         random_state=random_state)
 
         X_reduced["test"][method], _ = reduce_components(X["test"][method], reducer_fitted=reducers[method])
 
@@ -618,6 +605,7 @@ def add_all_feature_combos(X, scale=False):
         X[subset].update(X_combos)
     return X
 
+
 def encode_labels(y, target):
     le = LabelEncoder()
 
@@ -630,6 +618,7 @@ def encode_labels(y, target):
         print(f"{encoding} --> {label}")
 
     return y, target_enc, le
+
 
 # EVALUATE SCOREBOARD
 
@@ -799,6 +788,7 @@ def evaluate(y_true, y_pred, metrics):
 
 
 def plot_confusion_matrix(cm, le, model_name, features):
+    print("\n")
     # Normalize confusion matrix by rows (true labels)
     cm_norm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
 
@@ -871,6 +861,7 @@ def plot_pie(ax, values, label_prefixes, class_name, reverse=False):
 
 
 def plot_cm_pies(cm, le):
+    print("\n")
     classes = le.classes_
     total_samples = cm.sum()
 
@@ -888,4 +879,130 @@ def plot_cm_pies(cm, le):
         # --- TN/FP Pie Chart ---
         plot_pie(axes[i, 1], [TN, FP], ["TN", "FP"], class_name, reverse=True)
 
+    plt.show()
+
+
+# Regression Models Init, Fit, Predict with Extra Info
+
+def initialize_model(model_class, params):
+    if model_class == RandomForestRegressor:
+        return model_class(**params)
+    elif model_class == LGBMRegressor:
+        model_alphas = {
+            "y_pred": 0.5,
+            "CI_lower": 0.025,
+            "CI_upper": 0.975
+        }
+        params["objective"] = "quantile"
+        return {name: model_class(**params, alpha=alpha) for name, alpha in model_alphas.items()}
+    elif model_class == Ridge:
+        return BaggingRegressor(estimator=model_class(**params), n_estimators=50, bootstrap=True, n_jobs=-1)
+    else:
+        return None
+
+
+# Probability that the true year lies within ±N years of prediction
+def fixed_CI_probability(y_std, N):
+    y_std = max(y_std, 1e-6)  # avoid division by zero
+    z = N / y_std
+    return norm.cdf(z) - norm.cdf(-z)
+
+
+def predict_with_std(model, X_test, y_test):
+    # Get predictions from all estimators
+    estimators = model.estimators_
+    all_preds = np.stack([est.predict(X_test) for est in estimators])
+
+    results = pd.DataFrame({
+        "y_true": y_test,
+        "y_pred": np.mean(all_preds, axis=0),
+        "y_std": np.std(all_preds, axis=0),
+    })
+
+    # Assume the prediction errors follow a normal distribution
+    # Confidence Interval where prediction has 95% confidence
+    z = norm.ppf(0.975)  # ≈ 1.96
+    results["CI_lower"] = results["y_pred"] - z * results["y_std"]
+    results["CI_upper"] = results["y_pred"] + z * results["y_std"]
+
+    N = 10
+    results[f"confidence_±{N}"] = results["y_std"].apply(
+        lambda std: fixed_CI_probability(std, N)
+    )
+
+    # Absolute Error
+    results["error"] = (results["y_pred"] - results["y_true"]).abs()
+
+    return results
+
+
+def fit_multimodel(models, X_train, y_train):
+    for name in models.keys():
+        models[name].fit(X_train, y_train)
+    return models
+
+
+def predict_multimodel(models, X_test, y_test):
+    results = {"y_true": y_test}
+    for name, model in models.items():
+        results[name] = model.predict(X_test)
+
+    # Absolute Error
+    results["error"] = (results["y_pred"] - results["y_true"]).abs()
+
+    return pd.DataFrame(results)
+
+
+# Regression Display and Plot Prediction Results
+
+def get_result_subsets(results, samples):
+    results_rand = results.sample(n=samples, random_state=42)
+    results_best = results.nsmallest(samples, "error").sort_values(by="error", ascending=True)
+    results_worst = results.nlargest(samples, "error").sort_values(by="y_true", ascending=False)
+
+    results_rand.insert(0, "SAMPLE", "RANDOM")
+    results_best.insert(0, "SAMPLE", "BEST")
+    results_worst.insert(0, "SAMPLE", "WORST")
+
+    return [results_rand, results_best, results_worst]
+
+
+def print_top_1(result_subsets):
+    print("\n")
+    print("Example Sample Predictions:")
+    display(pd.concat([df.head(1) for df in result_subsets]))
+    print("\n")
+
+
+def plot_true_vs_pred(result_tables):
+    plt.figure(figsize=(14, result_tables[0].shape[0] * 0.3 * 2))
+
+    for idx, results in enumerate(result_tables):
+        samples = len(results)
+        # plt.subplot(1, len(result_tables), idx + 1)
+
+        plt.subplot2grid((2, 2), (0, 0) if idx == 0 else (1, idx - 1), colspan=(2 if idx == 0 else 1))
+
+        results_sorted = results.sort_values(by="y_true").reset_index(drop=True)
+        for i, row in results_sorted.iterrows():
+            # Confidence interval line
+            plt.plot([row["CI_lower"], row["CI_upper"]], [i, i], color='gray', linewidth=1, alpha=0.3)
+
+            # True year dot
+            plt.scatter(row["y_true"], i, color='seagreen', label='True' if i == 0 else "", zorder=3, s=40, alpha=0.5)
+
+            # Predicted year dot
+            plt.scatter(row["y_pred"], i, color='royalblue', label='Predicted' if i == 0 else "", zorder=3, s=40,
+                        alpha=0.5)
+
+        if idx == 0 or idx == 1: plt.ylabel("Data Entries")
+        if idx == 0: plt.legend(loc="upper right")
+        plt.ylim(samples, -1)
+        plt.yticks([])
+        plt.xlabel("Year")
+        plt.title(f"{samples} {results["SAMPLE"].unique()[0]} Sample Predictions")
+
+    plt.suptitle("Prediction vs True Year with Confidence Interval")
+    plt.grid(axis='x', linestyle='--', alpha=0.5)
+    plt.tight_layout()
     plt.show()
