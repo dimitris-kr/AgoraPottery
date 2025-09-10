@@ -81,7 +81,7 @@ def read_features(path, f_type="vectors"):
 
 # READ TARGETS
 
-def read_targets(path, targets):
+def read_targets(path, targets, f_type="vectors"):
     path = os.path.abspath(os.path.join(path, "targets"))
 
     subsets = ["train", "test"]
@@ -98,9 +98,21 @@ def read_targets(path, targets):
     if len(targets) == 0:
         return None
 
-    y = {subset: _y[targets] for subset, _y in y.items()}
-    return y
-
+    if f_type == "vectors":
+        return {
+            subset: _y[targets]
+            for subset, _y in y.items()
+        }
+    elif f_type == "tensors":
+        return {
+            subset: {
+                target: torch.tensor(y[subset][target].values, dtype=torch.float32)
+                for target in targets
+            }
+            for subset in y.keys()
+        }
+    else:
+        return None
 
 # PRINT INFO
 
@@ -120,14 +132,29 @@ def print_info_features(X):
 
 
 def print_info_targets(y):
-    print("y = {")
+    print("{")
     for subset in y.keys():
         indent = "\t"
-        print(f"{indent}{subset}: ")
-        indent = 2 * "\t"
-        print(f"{indent}{type(y[subset])}")
-        print(f"{indent}shape {y[subset].shape}")
-        print(f"{indent}columns {list(y[subset].columns)},")
+        print(f"{indent}{subset}: ", end="")
+
+        y_type = type(y[subset])
+        if y_type is pd.DataFrame:
+            print()
+            indent = 2 * "\t"
+            print(f"{indent}{y_type}")
+            print(f"{indent}shape   = {y[subset].shape}")
+            print(f"{indent}columns = {list(y[subset].columns)},")
+        elif y_type is dict:
+            print("{")
+            for target in y[subset].keys():
+                if type(y[subset][target]) is not torch.Tensor:
+                    continue
+                indent = 2 * "\t"
+                print(f"{indent}{target}: ")
+                indent = 3 * "\t"
+                print(f"{indent}{type(y[subset][target])}")
+                print(f"{indent}shape = {y[subset][target].shape}")
+            print("\t},")
     print("}")
 
 
