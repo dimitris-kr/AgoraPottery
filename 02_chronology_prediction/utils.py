@@ -98,18 +98,17 @@ def read_targets(path, targets, f_type="vectors"):
     if len(targets) == 0:
         return None
 
+    y = {
+        subset: _y[targets]
+        for subset, _y in y.items()
+    }
+
     if f_type == "vectors":
-        return {
-            subset: _y[targets]
-            for subset, _y in y.items()
-        }
+        return y
     elif f_type == "tensors":
         return {
-            subset: {
-                target: torch.tensor(y[subset][target].values, dtype=torch.float32)
-                for target in targets
-            }
-            for subset in y.keys()
+            subset: torch.tensor(_y.values, dtype=torch.float32, device="cuda")
+            for subset, _y in y.items()
         }
     else:
         return None
@@ -138,23 +137,13 @@ def print_info_targets(y):
         print(f"{indent}{subset}: ", end="")
 
         y_type = type(y[subset])
+        print()
+        indent = 2 * "\t"
+        print(f"{indent}{y_type}")
+        print(f"{indent}shape   = {y[subset].shape}")
+
         if y_type is pd.DataFrame:
-            print()
-            indent = 2 * "\t"
-            print(f"{indent}{y_type}")
-            print(f"{indent}shape   = {y[subset].shape}")
             print(f"{indent}columns = {list(y[subset].columns)},")
-        elif y_type is dict:
-            print("{")
-            for target in y[subset].keys():
-                if type(y[subset][target]) is not torch.Tensor:
-                    continue
-                indent = 2 * "\t"
-                print(f"{indent}{target}: ")
-                indent = 3 * "\t"
-                print(f"{indent}{type(y[subset][target])}")
-                print(f"{indent}shape = {y[subset][target].shape}")
-            print("\t},")
     print("}")
 
 
