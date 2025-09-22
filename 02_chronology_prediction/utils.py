@@ -15,7 +15,7 @@ from sklearn.ensemble import RandomForestRegressor, BaggingRegressor
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, max_error, \
     accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
-from sklearn.model_selection import ParameterGrid
+from sklearn.model_selection import ParameterGrid, train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.decomposition import PCA
 from xgboost import XGBRegressor, XGBClassifier
@@ -1022,3 +1022,46 @@ def plot_true_vs_pred(result_tables):
     plt.grid(axis='x', linestyle='--', alpha=0.5)
     plt.tight_layout()
     plt.show()
+
+
+# Train - Validation Split (Further Split)
+def train_val_split(X, y):
+    indices = np.arange(y["train"].shape[0])
+    train_idx, val_idx = train_test_split(indices, test_size=0.1, random_state=42)
+
+    train_idx = torch.tensor(train_idx, dtype=torch.int64)
+    val_idx = torch.tensor(val_idx, dtype=torch.int64)
+
+    X = {
+        "train": {method: tensors[train_idx] for method, tensors in X["train"].items()},
+        "val": {method: tensors[val_idx] for method, tensors in X["train"].items()},
+        "test": X["test"]
+    }
+
+    y = {
+        "train": y["train"][train_idx],
+        "val": y["train"][val_idx],
+        "test": y["test"]
+    }
+
+    return X, y
+
+# Get Data Dimensions
+def get_dimensions(X, y, le=None, verbose=True):
+    X_dimensions = {
+        method: _X.shape[1]
+        for method, _X in X["train"].items()
+    }
+
+    if le:
+        # CLASSIFICATION → dims = number of classes
+        y_dimensions = len(le.classes_)
+    else:
+        # REGRESSION -> dims = number of continuous variables
+        y_dimensions = y["train"].shape[1]
+
+    if verbose:
+        print("X Dimensions:", X_dimensions)
+        print("y Dimensions:", y_dimensions)
+
+    return X_dimensions, y_dimensions
