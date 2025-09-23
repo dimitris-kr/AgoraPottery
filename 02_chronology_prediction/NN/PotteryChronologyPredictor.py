@@ -1,8 +1,17 @@
+import numpy as np
 import torch
 import torch.nn as nn
+import torch.optim as optim
 import torchinfo
 
+from utils import evaluate
+
+
 # MODEL CLASS
+# Multilayer Perceptron
+# Hidden Layer Block:
+# Linear → Activation → Dropout
+
 class PotteryChronologyPredictor(nn.Module):
     def __init__(self,
                  input_sizes,
@@ -12,7 +21,7 @@ class PotteryChronologyPredictor(nn.Module):
                  dropout=0.3,
                  blocks=3,
                  hidden_size_pattern="decreasing",
-                 chronology_target = "years"
+                 chronology_target="years"
                  ):
 
         super(PotteryChronologyPredictor, self).__init__()
@@ -48,12 +57,11 @@ class PotteryChronologyPredictor(nn.Module):
         block_input_size = hidden_size * len(self.encoders)
         block_output_size = hidden_size
 
-
         for i in range(blocks):
             # HIDDEN LAYER BLOCK (Linear → Activation → Dropout)
-            self.model.add_module(f"dense{i+1}", nn.Linear(block_input_size, block_output_size))
-            self.model.add_module(f"activation{i+1}", activation())
-            self.model.add_module(f"dropout{i+1}", nn.Dropout(dropout))
+            self.model.add_module(f"dense{i + 1}", nn.Linear(block_input_size, block_output_size))
+            self.model.add_module(f"activation{i + 1}", activation())
+            self.model.add_module(f"dropout{i + 1}", nn.Dropout(dropout))
 
             block_input_size = block_output_size
             if hidden_size_pattern == "decreasing" and block_output_size > 8:
@@ -78,6 +86,8 @@ class PotteryChronologyPredictor(nn.Module):
         if len(inputs) == 1 and isinstance(inputs[0], (list, tuple)):
             inputs = inputs[0]
 
+        inputs = [X.to(self.device) for X in inputs]
+
         # Pass each modality through its encoder
         encoded_inputs = [encoder(X) for X, encoder in zip(inputs, self.encoders)]
 
@@ -97,17 +107,17 @@ class PotteryChronologyPredictor(nn.Module):
                 torchinfo.summary(
                     self,
                     input_size=[(input_size,) for input_size in self.input_sizes],
-                    batch_dim = 0,
+                    batch_dim=0,
                     device=self.device,
                     col_names=("input_size", "output_size", "num_params", "mult_adds")
                 )
             )
 
-# TRAIN
 
+# TRAIN
 def train_epoch(model, loader, criterion, optimizer):
     model.train()
-    train_losses = []
+    losses = []
     for X_batch, y_batch in loader:
         X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
         y_batch = y_batch.to(model.device)
@@ -126,6 +136,123 @@ def train_epoch(model, loader, criterion, optimizer):
         # Update Weights
         optimizer.step()
 
-        train_losses += [loss.item()]
+        # Save batch loss
+        losses += [loss.item()]
 
-    return model, optimizer, train_losses
+    # Calculate Training Mean Loss
+    train_loss = np.mean(losses)
+
+    return model, optimizer, train_loss
+
+
+def validate_epoch(model, loader, criterion):
+    model.eval()
+    losses = []
+    y_true, y_pred = [], []
+
+    # Disable gradient computation
+    with torch.no_grad():
+        for X_batch, y_batch in loader:
+            X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
+            y_batch = y_batch.to(model.device)
+
+        # Forward Pass → Predictions
+        outputs = model(X_batch)
+
+        # Calculate Loss
+        loss = criterion(outputs, y_batch)
+
+        # Save batch loss
+        losses += [loss.item()]
+
+        y_true += [y_batch]
+        y_pred += [outputs]
+
+    # Calculate Valication Mean Loss
+    val_loss = np.mean(losses)
+
+    # Concatenate Batches
+    y_true, y_pred = torch.cat(y_true), torch.cat(y_pred)
+
+    # Classification case -> choose class index with max value
+    if model.chronology_target == "periods":
+        y_pred = y_pred.argmax(dim=1)
+
+    return y_true.cpu().numpy(), y_pred.cpu().numpy(), val_loss
+
+
+def report_epoch(epoch, train_loss, val_loss, scores):
+    end = " | "
+    print(f"Epoch {epoch:03d}", end=end)
+    print(f"Train Loss: {train_loss:.4f}", end=end)
+    print(f"Val. Loss: {val_loss:.4f}", end=end)
+    for i, (metric, score) in enumerate(scores.items()):
+        if i == len(scores) - 1: end = "\n"
+        print(f"{metric}: {score:.4f}", end=end)
+
+
+def early_stopping(model, val_loss, best, patience_counter, patience):
+    stop = False
+    if val_loss < best[0]:
+        best = (val_loss, model.state_dict())
+        patience_counter = 0
+    else:
+        patience_counter += 1
+        if patience_counter >= patience:
+            stop = True
+            print("** Early Stopping **")
+
+    return stop, best, patience_counter
+
+
+
+def train(model,
+          train_loader,
+          val_loader,
+          criterion,
+          metrics,
+          epochs=50,
+          lr=1e-3,
+          weight_decay=1e-5,
+          patience=5
+          ):
+    optimizer = optim.Adam(
+        model.parameters(),
+        lr=lr,
+        weight_decay=weight_decay
+    )
+
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="min",
+        factor=0.5,
+        patience=2
+    )
+
+    best = (np.inf, None) # 0: best validation loss / 1: best model state
+    patience_counter = 0
+
+    for epoch in range(1, epochs + 1):
+        # Training phase
+        model, optimizer, train_loss = train_epoch(model, train_loader, criterion, optimizer)
+
+        # Validation phase
+        y_true, y_pred, val_loss = validate_epoch(model, val_loader, criterion)
+
+        # Evaluate & Report Results
+        scores = evaluate(y_true, y_pred, metrics)
+        report_epoch(epoch, train_loss, val_loss, scores)
+
+        # Scheduler
+        # If validation loss stops improving, lower learning rate automatically
+        scheduler.step(val_loss)
+
+        # Early Stopping
+        # If validation loss doesn’t improve for X epochs (patience),
+        # stop training early and restore the best model weights
+        stop, best, patience_counter = early_stopping(model, val_loss, best, patience_counter, patience)
+        if stop: break
+
+    model.load_state_dict(best[1])
+    return model
+

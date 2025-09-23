@@ -36,7 +36,7 @@ d_types_methods = {
 
 metrics_r = {
     "mae": mean_absolute_error,
-    "rmse": mean_squared_error,
+    "mse": mean_squared_error,
     "r2": r2_score,
     "medae": median_absolute_error,
     "maxerror:": max_error,
