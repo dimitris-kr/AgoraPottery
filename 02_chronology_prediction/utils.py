@@ -81,7 +81,7 @@ def read_features(path, f_type="vectors"):
 
 # READ TARGETS
 
-def read_targets(path, targets, f_type="vectors"):
+def read_targets(path, targets, f_type="df"):
     path = os.path.abspath(os.path.join(path, "targets"))
 
     subsets = ["train", "test"]
@@ -103,13 +103,10 @@ def read_targets(path, targets, f_type="vectors"):
         for subset, _y in y.items()
     }
 
-    if f_type == "vectors":
+    if f_type == "df":
         return y
-    elif f_type == "tensors":
-        return {
-            subset: torch.tensor(_y.values, dtype=torch.float32, device="cuda")
-            for subset, _y in y.items()
-        }
+    elif f_type == "np":
+        return {subset: _y.to_numpy() for subset, _y in y.items()}
     else:
         return None
 
@@ -1065,3 +1062,15 @@ def get_dimensions(X, y, le=None, verbose=True):
         print("y Dimensions:", y_dimensions)
 
     return X_dimensions, y_dimensions
+
+def get_device():
+    print("PyTorch Version:", torch.__version__)
+    if torch.cuda.is_available():
+        print("CUDA is available")
+        print("GPU:", torch.cuda.get_device_name(0))
+        device = torch.device("cuda")
+    else:
+        print("CUDA is not available")
+        device = torch.device("cpu")
+    print("Using Device:", device)
+    return device

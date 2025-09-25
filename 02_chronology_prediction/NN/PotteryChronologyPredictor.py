@@ -17,6 +17,7 @@ class PotteryChronologyPredictor(nn.Module):
                  input_sizes,
                  output_size,
                  hidden_size,
+                 device,
                  activation=nn.ReLU,
                  dropout=0.3,
                  blocks=3,
@@ -36,7 +37,7 @@ class PotteryChronologyPredictor(nn.Module):
         self.hidden_size = hidden_size
 
         # Set current device to GPU, if available
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
 
         # PER-MODALITY ENCODERS
         # Input Size:  input_sizes[i]
@@ -118,6 +119,7 @@ class PotteryChronologyPredictor(nn.Module):
 def train_epoch(model, loader, criterion, optimizer):
     model.train()
     losses = []
+    # loss_weights = [1, 0.5]
     for X_batch, y_batch in loader:
         X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
         y_batch = y_batch.to(model.device)
@@ -129,6 +131,15 @@ def train_epoch(model, loader, criterion, optimizer):
 
         # Calculate Loss
         loss = criterion(outputs, y_batch)
+
+        # loss_per_target = []
+        # for d in range(y_batch.shape[1]):
+        #     loss_per_target += [criterion(outputs[:, d], y_batch[:, d])]
+        #
+        # loss = None
+        # for w, l in zip(loss_weights, loss_per_target):
+        #     wl = w * l
+        #     loss = loss + wl if loss else wl
 
         # Backpropagation → Calculate Gradients
         loss.backward()
@@ -145,10 +156,11 @@ def train_epoch(model, loader, criterion, optimizer):
     return model, optimizer, train_loss
 
 
-def validate_epoch(model, loader, criterion):
+def validate_epoch(model, loader, criterion, y_scaler):
     model.eval()
     losses = []
     y_true, y_pred = [], []
+    # loss_weights = [1, 0.2]
 
     # Disable gradient computation
     with torch.no_grad():
@@ -156,17 +168,25 @@ def validate_epoch(model, loader, criterion):
             X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
             y_batch = y_batch.to(model.device)
 
-        # Forward Pass → Predictions
-        outputs = model(X_batch)
+            # Forward Pass → Predictions
+            outputs = model(X_batch)
 
-        # Calculate Loss
-        loss = criterion(outputs, y_batch)
+            # Calculate Loss
+            loss = criterion(outputs, y_batch)
+            # loss_per_target = []
+            # for d in range(y_batch.shape[1]):
+            #     loss_per_target += [criterion(outputs[:, d], y_batch[:, d])]
+            #
+            # loss = None
+            # for w, l in zip(loss_weights, loss_per_target):
+            #     wl = w * l
+            #     loss = loss + wl if loss else wl
 
-        # Save batch loss
-        losses += [loss.item()]
+            # Save batch loss
+            losses += [loss.item()]
 
-        y_true += [y_batch]
-        y_pred += [outputs]
+            y_true += [y_batch]
+            y_pred += [outputs]
 
     # Calculate Valication Mean Loss
     val_loss = np.mean(losses)
@@ -174,21 +194,29 @@ def validate_epoch(model, loader, criterion):
     # Concatenate Batches
     y_true, y_pred = torch.cat(y_true), torch.cat(y_pred)
 
+    if model.chronology_target == "years":
+        y_true = y_scaler.inverse_transform(y_true.cpu().numpy())
+        y_pred = y_scaler.inverse_transform(y_pred.cpu().numpy())
+
     # Classification case -> choose class index with max value
     if model.chronology_target == "periods":
-        y_pred = y_pred.argmax(dim=1)
+        y_true = y_true.cpu().numpy()
+        y_pred = y_pred.argmax(dim=1).cpu().numpy()
 
-    return y_true.cpu().numpy(), y_pred.cpu().numpy(), val_loss
+    return y_true, y_pred, val_loss
 
 
 def report_epoch(epoch, train_loss, val_loss, scores):
     end = " | "
-    print(f"Epoch {epoch:03d}", end=end)
+    epoch_txt = f"Epoch {epoch:03d}"
+    print(epoch_txt, end=end)
     print(f"Train Loss: {train_loss:.4f}", end=end)
-    print(f"Val. Loss: {val_loss:.4f}", end=end)
-    for i, (metric, score) in enumerate(scores.items()):
-        if i == len(scores) - 1: end = "\n"
-        print(f"{metric}: {score:.4f}", end=end)
+    print(f"Val. Loss: {val_loss:.4f}", end="\n")
+    for d in range(len(scores)):
+        print(len(epoch_txt) * " ", end=end)
+        print(f"target {d}", end=end)
+        for i, (metric, score) in enumerate(scores[d].items()):
+            print(f"{metric}: {score:.4f}", end=end if i < len(scores[d]) - 1 else "\n")
 
 
 def early_stopping(model, val_loss, best, patience_counter, patience):
@@ -205,12 +233,12 @@ def early_stopping(model, val_loss, best, patience_counter, patience):
     return stop, best, patience_counter
 
 
-
 def train(model,
           train_loader,
           val_loader,
           criterion,
           metrics,
+          y_scaler,
           epochs=50,
           lr=1e-3,
           weight_decay=1e-5,
@@ -229,7 +257,7 @@ def train(model,
         patience=2
     )
 
-    best = (np.inf, None) # 0: best validation loss / 1: best model state
+    best = (np.inf, None)  # 0: best validation loss / 1: best model state
     patience_counter = 0
 
     for epoch in range(1, epochs + 1):
@@ -237,10 +265,12 @@ def train(model,
         model, optimizer, train_loss = train_epoch(model, train_loader, criterion, optimizer)
 
         # Validation phase
-        y_true, y_pred, val_loss = validate_epoch(model, val_loader, criterion)
+        y_true, y_pred, val_loss = validate_epoch(model, val_loader, criterion, y_scaler)
 
         # Evaluate & Report Results
-        scores = evaluate(y_true, y_pred, metrics)
+        scores = []
+        for d in range(y_true.shape[1]):
+            scores += [evaluate(y_true[:, d], y_pred[:, d], metrics)]
         report_epoch(epoch, train_loss, val_loss, scores)
 
         # Scheduler
@@ -255,4 +285,3 @@ def train(model,
 
     model.load_state_dict(best[1])
     return model
-
