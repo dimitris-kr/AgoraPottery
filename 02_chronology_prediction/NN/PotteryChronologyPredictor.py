@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchinfo
+from tqdm.notebook import tqdm
 
 from utils import evaluate
 
@@ -116,11 +117,12 @@ class PotteryChronologyPredictor(nn.Module):
 
 
 # TRAIN
-def train_epoch(model, loader, criterion, optimizer):
+def train_epoch(model, loader, criterion, optimizer, desc):
     model.train()
     losses = []
     # loss_weights = [1, 0.5]
-    for X_batch, y_batch in loader:
+    loop = tqdm(loader, desc=f"{desc}[ Train ]", leave=True)
+    for X_batch, y_batch in loop:
         X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
         y_batch = y_batch.to(model.device)
 
@@ -150,13 +152,15 @@ def train_epoch(model, loader, criterion, optimizer):
         # Save batch loss
         losses += [loss.item()]
 
+        loop.set_postfix(loss=f"{np.mean(losses):.4f}")
+
     # Calculate Training Mean Loss
     train_loss = np.mean(losses)
 
     return model, optimizer, train_loss
 
 
-def validate_epoch(model, loader, criterion, y_scaler):
+def validate_epoch(model, loader, criterion, y_scaler, desc):
     model.eval()
     losses = []
     y_true, y_pred = [], []
@@ -164,7 +168,8 @@ def validate_epoch(model, loader, criterion, y_scaler):
 
     # Disable gradient computation
     with torch.no_grad():
-        for X_batch, y_batch in loader:
+        loop = tqdm(loader, desc=f"{desc}[ Val  ]", leave=True)
+        for X_batch, y_batch in loop:
             X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
             y_batch = y_batch.to(model.device)
 
@@ -185,6 +190,8 @@ def validate_epoch(model, loader, criterion, y_scaler):
             # Save batch loss
             losses += [loss.item()]
 
+            loop.set_postfix(loss=f"{np.mean(losses):.4f}")
+
             y_true += [y_batch]
             y_pred += [outputs]
 
@@ -194,41 +201,61 @@ def validate_epoch(model, loader, criterion, y_scaler):
     # Concatenate Batches
     y_true, y_pred = torch.cat(y_true), torch.cat(y_pred)
 
-    if model.chronology_target == "years":
-        y_true = y_scaler.inverse_transform(y_true.cpu().numpy())
-        y_pred = y_scaler.inverse_transform(y_pred.cpu().numpy())
-
     # Classification case -> choose class index with max value
     if model.chronology_target == "periods":
-        y_true = y_true.cpu().numpy()
-        y_pred = y_pred.argmax(dim=1).cpu().numpy()
+        y_pred = y_pred.argmax(dim=1)
+
+    y_true = y_true.cpu().numpy()
+    y_pred = y_pred.cpu().numpy()
+
+    if y_scaler:
+        y_true = y_scaler.inverse_transform(y_true)
+        y_pred = y_scaler.inverse_transform(y_pred)
 
     return y_true, y_pred, val_loss
 
 
-def report_epoch(epoch, train_loss, val_loss, scores):
-    end = " | "
-    epoch_txt = f"Epoch {epoch:03d}"
-    print(epoch_txt, end=end)
-    print(f"Train Loss: {train_loss:.4f}", end=end)
-    print(f"Val. Loss: {val_loss:.4f}", end="\n")
+def report_scores(scores, indentation):
     for d in range(len(scores)):
-        print(len(epoch_txt) * " ", end=end)
-        print(f"target {d}", end=end)
+        line = f"{indentation}target{d}: ["
+
         for i, (metric, score) in enumerate(scores[d].items()):
-            print(f"{metric}: {score:.4f}", end=end if i < len(scores[d]) - 1 else "\n")
+            line += f"{metric}: {score:.4f}"
+            line += ", " if i < len(scores[d]) - 1 else "]"
+
+        tqdm.write(line)
+
+def report_final_model(history):
+    epoch_idx = history["best_epoch"] - 1
+
+    tqdm.write(f"** Final Model: **")
+    for key, values in history.items():
+        if key == "scores":
+            for t, scores in enumerate(values):
+                line = f"   target{t}: ["
+
+                for i, (metric, score) in enumerate(scores.items()):
+                    line += f"{metric}: {score[epoch_idx]:.4f}"
+                    line += ", " if i < len(scores) - 1 else "]"
+
+                tqdm.write(line)
+        elif key == "best_epoch":
+            continue
+        else:
+            tqdm.write(f"   {key}: {values[epoch_idx]:.4f}")
 
 
-def early_stopping(model, val_loss, best, patience_counter, patience):
+def early_stopping(model, val_loss, best, patience_counter, patience, epoch):
     stop = False
     if val_loss < best[0]:
-        best = (val_loss, model.state_dict())
+        best = (val_loss, model.state_dict(), epoch)
         patience_counter = 0
     else:
         patience_counter += 1
         if patience_counter >= patience:
             stop = True
-            print("** Early Stopping **")
+            tqdm.write("** Early Stopping **")
+            tqdm.write(f"** Restore Model State at Epoch {best[2]} **")
 
     return stop, best, patience_counter
 
@@ -238,7 +265,7 @@ def train(model,
           val_loader,
           criterion,
           metrics,
-          y_scaler,
+          y_scaler=None,
           epochs=50,
           lr=1e-3,
           weight_decay=1e-5,
@@ -257,21 +284,45 @@ def train(model,
         patience=2
     )
 
-    best = (np.inf, None)  # 0: best validation loss / 1: best model state
+    best = (np.inf, None, 0)  # 0: best validation loss / 1: best model state / 2: best epoch
     patience_counter = 0
 
+    # History containers
+    history = {
+        "train_loss": [],
+        "val_loss": [],
+        "scores": [{metric: [] for metric in metrics} for _ in range(val_loader.dataset.__dim__()[1])]
+    }
+
     for epoch in range(1, epochs + 1):
+        epoch_txt = f"Epoch {str(epoch).zfill(len(str(epochs)))}/{epochs} "
+        indentation = " " * len(epoch_txt)
+
         # Training phase
-        model, optimizer, train_loss = train_epoch(model, train_loader, criterion, optimizer)
+        # train_loop = tqdm(train_loader, desc=f"{epoch_txt}[Train]", leave=True)
+        model, optimizer, train_loss = train_epoch(model, train_loader, criterion, optimizer, epoch_txt)
 
         # Validation phase
-        y_true, y_pred, val_loss = validate_epoch(model, val_loader, criterion, y_scaler)
+        # val_loop = tqdm(val_loader, desc=f"{indentation}[Val]", leave=True)
+        y_true, y_pred, val_loss = validate_epoch(model, val_loader, criterion, y_scaler, indentation)
 
         # Evaluate & Report Results
-        scores = []
-        for d in range(y_true.shape[1]):
-            scores += [evaluate(y_true[:, d], y_pred[:, d], metrics)]
-        report_epoch(epoch, train_loss, val_loss, scores)
+        if len(y_true.shape) > 1:
+            scores = [evaluate(y_true[:, d], y_pred[:, d], metrics) for d in range(y_true.shape[1])]
+        else:
+            scores = [evaluate(y_true, y_pred, metrics)]
+
+        # report_scores(scores, indentation)
+
+        # Save history
+        history["train_loss"].append(train_loss)
+        history["val_loss"].append(val_loss)
+        # history["scores"].append(scores)
+
+        for t in range(len(scores)):
+            for metric in metrics:
+                history["scores"][t][metric].append(scores[t][metric])
+
 
         # Scheduler
         # If validation loss stops improving, lower learning rate automatically
@@ -280,8 +331,12 @@ def train(model,
         # Early Stopping
         # If validation loss doesn’t improve for X epochs (patience),
         # stop training early and restore the best model weights
-        stop, best, patience_counter = early_stopping(model, val_loss, best, patience_counter, patience)
+        stop, best, patience_counter = early_stopping(model, val_loss, best, patience_counter, patience, epoch)
         if stop: break
 
     model.load_state_dict(best[1])
-    return model
+
+    history["best_epoch"] = best[2]
+    report_final_model(history)
+
+    return model, history

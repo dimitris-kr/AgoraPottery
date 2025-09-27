@@ -5,6 +5,7 @@ import numpy as np
 from IPython.core.display_functions import display
 from lightgbm import LGBMRegressor
 from matplotlib import pyplot as plt
+import matplotlib.gridspec as gridspec
 import seaborn as sns
 import os
 import time
@@ -36,7 +37,7 @@ d_types_methods = {
 
 metrics_r = {
     "mae": mean_absolute_error,
-    "mse": mean_squared_error,
+    "rmse": mean_squared_error,
     "r2": r2_score,
     "medae": median_absolute_error,
     "maxerror:": max_error,
@@ -109,6 +110,7 @@ def read_targets(path, targets, f_type="df"):
         return {subset: _y.to_numpy() for subset, _y in y.items()}
     else:
         return None
+
 
 # PRINT INFO
 
@@ -1043,6 +1045,7 @@ def train_val_split(X, y):
 
     return X, y
 
+
 # Get Data Dimensions
 def get_dimensions(X, y, le=None, verbose=True):
     X_dimensions = {
@@ -1063,6 +1066,7 @@ def get_dimensions(X, y, le=None, verbose=True):
 
     return X_dimensions, y_dimensions
 
+
 def get_device():
     print("PyTorch Version:", torch.__version__)
     if torch.cuda.is_available():
@@ -1074,3 +1078,57 @@ def get_device():
         device = torch.device("cpu")
     print("Using Device:", device)
     return device
+
+
+def plot_history(history, target_names=None):
+    n_targets = len(history["scores"][0])
+    epochs = range(1, len(history["train_loss"]) + 1)
+
+    if target_names is None:
+        target_names = [f"Target {i}" for i in range(n_targets)]
+
+    # Define grid
+    plt.style.use('seaborn-v0_8')
+    ncols = 2
+    nrows = n_targets + 1
+    fig = plt.figure(figsize=(12, nrows * 5))
+    gs = gridspec.GridSpec(nrows, ncols, figure=fig)
+
+    xticks = list(range(epochs[-1], 0, -2))
+
+    # First row: Train & Val Loss (colspan=2)
+    ax = fig.add_subplot(gs[0, :])
+    ax.plot(epochs, history["train_loss"], marker='o', label="Train Loss", color="tab:blue")
+    ax.plot(epochs, history["val_loss"], marker='o', label="Val Loss", color="tab:green")
+    ax.axvline(x=history["best_epoch"], color='tab:red', linestyle='--', alpha=0.8)
+    ax.set_title("Train & Validation Loss")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Loss")
+    ax.set_xticks(xticks)
+    # ax.set_ylim([0, max(history["train_loss"] + history["val_loss"]) * 1.05])
+    ax.legend()
+
+    for t, scores in enumerate(history["scores"]):
+        if set(scores.keys()).issubset(metrics_r.keys()):
+            subplots = subplots_r
+        elif set(scores.keys()).issubset(metrics_c.keys()):
+            subplots = subplots_c
+        else:
+            continue
+        for idx, subplot in enumerate(subplots):
+            ax = fig.add_subplot(gs[t + 1, idx] if len(subplots) > 1 else gs[t + 1, :])  # place in grid
+
+            for metric, color in zip(subplot['metrics'], subplot['colors']):
+                if metric not in scores: continue
+                ax.plot(epochs, scores[metric], marker='o', label=metric.upper(), color=color)
+
+            ax.axvline(x=history["best_epoch"], color='tab:red', linestyle='--', alpha=0.8)
+            if idx == 0: ax.set_title(f"{target_names[t]} – Validation Scores")
+            ax.set_xlabel("Epoch")
+            ax.set_ylabel(subplot['ylabel'])
+            ax.set_xticks(xticks)
+            # ax.set_ylim([0, (1 if extra_metric in metrics_c or extra_metric == "r2" else max(score_per_epoch) * 1.05)])
+            ax.legend()
+
+    plt.tight_layout()
+    plt.show()

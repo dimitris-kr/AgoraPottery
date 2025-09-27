@@ -1,5 +1,6 @@
 import itertools
 from torch.utils.data import Dataset, DataLoader
+
 from utils import d_types_methods
 
 # Torch Dataset
@@ -19,6 +20,11 @@ class PotteryDataset(Dataset):
     def __getitem__(self, idx):
         # Return one sample (features and target) at position idx
         return [X[idx] for X in self.X_list], self.y[idx]
+
+    def __dim__(self):
+        X_dim = tuple(X.shape[1] for X in self.X_list)
+        y_dim = self.y.shape[1] if len(self.y.shape) > 1 else 1
+        return X_dim, y_dim
 
 
 feature_types = d_types_methods["text"] + d_types_methods["image"]
