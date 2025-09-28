@@ -3,10 +3,11 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchinfo
-from tqdm.notebook import tqdm
+from sklearn.model_selection import ParameterGrid
+from tqdm.std import tqdm
 
-from utils import evaluate
-
+from utils import evaluate, fmt_time
+import time
 
 # MODEL CLASS
 # Multilayer Perceptron
@@ -121,7 +122,7 @@ def train_epoch(model, loader, criterion, optimizer, desc):
     model.train()
     losses = []
     # loss_weights = [1, 0.5]
-    loop = tqdm(loader, desc=f"{desc}[ Train ]", leave=True)
+    loop = tqdm(loader, desc=f"{desc}[Train]", leave=True)
     for X_batch, y_batch in loop:
         X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
         y_batch = y_batch.to(model.device)
@@ -168,7 +169,7 @@ def validate_epoch(model, loader, criterion, y_scaler, desc):
 
     # Disable gradient computation
     with torch.no_grad():
-        loop = tqdm(loader, desc=f"{desc}[ Val  ]", leave=True)
+        loop = tqdm(loader, desc=f"{desc}[ Val ]", leave=True)
         for X_batch, y_batch in loop:
             X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
             y_batch = y_batch.to(model.device)
@@ -214,6 +215,25 @@ def validate_epoch(model, loader, criterion, y_scaler, desc):
 
     return y_true, y_pred, val_loss
 
+def report_epoch(history, start_time, epoch_txt):
+    execution_time = time.time() - start_time
+
+    sep = " | "
+    line = f"{epoch_txt}{sep}"
+    line += f"exec_time: {fmt_time(execution_time)}{sep}"
+    for key, values in history.items():
+        if key == "scores":
+            for t, scores in enumerate(values):
+                line += f"target{t}_"
+                for i, (metric, score) in enumerate(scores.items()):
+                    if i > 0: break
+                    line += f"{metric}: {score[-1]:.4f}"
+                    line += sep if t < len(values) - 1 else ""
+        elif key == "best_epoch":
+            continue
+        else:
+            line += f"{key}: {values[-1]:.4f}{sep}"
+    print(line)
 
 def report_scores(scores, indentation):
     for d in range(len(scores)):
@@ -223,12 +243,12 @@ def report_scores(scores, indentation):
             line += f"{metric}: {score:.4f}"
             line += ", " if i < len(scores[d]) - 1 else "]"
 
-        tqdm.write(line)
+        print(line)
 
 def report_final_model(history):
     epoch_idx = history["best_epoch"] - 1
 
-    tqdm.write(f"** Final Model: **")
+    print(f"** Final Model:")
     for key, values in history.items():
         if key == "scores":
             for t, scores in enumerate(values):
@@ -238,11 +258,11 @@ def report_final_model(history):
                     line += f"{metric}: {score[epoch_idx]:.4f}"
                     line += ", " if i < len(scores) - 1 else "]"
 
-                tqdm.write(line)
+                print(line)
         elif key == "best_epoch":
             continue
         else:
-            tqdm.write(f"   {key}: {values[epoch_idx]:.4f}")
+            print(f"   {key}: {values[epoch_idx]:.4f}")
 
 
 def early_stopping(model, val_loss, best, patience_counter, patience, epoch):
@@ -254,8 +274,8 @@ def early_stopping(model, val_loss, best, patience_counter, patience, epoch):
         patience_counter += 1
         if patience_counter >= patience:
             stop = True
-            tqdm.write("** Early Stopping **")
-            tqdm.write(f"** Restore Model State at Epoch {best[2]} **")
+            print("** Early Stopping")
+            print(f"** Restore Model State at Epoch {best[2]}")
 
     return stop, best, patience_counter
 
@@ -295,6 +315,8 @@ def train(model,
     }
 
     for epoch in range(1, epochs + 1):
+        start_time = time.time()
+
         epoch_txt = f"Epoch {str(epoch).zfill(len(str(epochs)))}/{epochs} "
         indentation = " " * len(epoch_txt)
 
@@ -332,6 +354,8 @@ def train(model,
         # If validation loss doesn’t improve for X epochs (patience),
         # stop training early and restore the best model weights
         stop, best, patience_counter = early_stopping(model, val_loss, best, patience_counter, patience, epoch)
+
+        # report_epoch(history, start_time, epoch_txt)
         if stop: break
 
     model.load_state_dict(best[1])
@@ -340,3 +364,9 @@ def train(model,
     report_final_model(history)
 
     return model, history
+
+
+def tune(param_grid, X_dim, y_dim, device):
+    for params in ParameterGrid(param_grid):
+        print(f"\n🔎 Running with params: {params}")
+    print(len(ParameterGrid(param_grid)))

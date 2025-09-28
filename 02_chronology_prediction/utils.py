@@ -40,7 +40,7 @@ metrics_r = {
     "rmse": mean_squared_error,
     "r2": r2_score,
     "medae": median_absolute_error,
-    "maxerror:": max_error,
+    # "maxerror:": max_error,
 }
 
 metrics_c = {
@@ -1045,6 +1045,13 @@ def train_val_split(X, y):
 
     return X, y
 
+def scale(arrays):
+    scaler = StandardScaler()
+    arrays = {
+        subset: scaler.fit_transform(array) if subset == "train" else scaler.transform(array)
+        for subset, array in arrays.items()
+    }
+    return arrays, scaler,
 
 # Get Data Dimensions
 def get_dimensions(X, y, le=None, verbose=True):
