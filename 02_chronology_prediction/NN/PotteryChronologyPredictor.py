@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -6,8 +7,10 @@ import torchinfo
 from sklearn.model_selection import ParameterGrid
 from tqdm.std import tqdm
 
-from utils import evaluate, fmt_time
+from utils import evaluate, fmt_time, plot_history, get_column_widths_nn, print_row_header, print_row, \
+    print_row_divider, print_row_nn
 import time
+
 
 # MODEL CLASS
 # Multilayer Perceptron
@@ -118,11 +121,11 @@ class PotteryChronologyPredictor(nn.Module):
 
 
 # TRAIN
-def train_epoch(model, loader, criterion, optimizer, desc):
+def train_epoch(model, loader, criterion, optimizer, desc, verbose):
     model.train()
     losses = []
     # loss_weights = [1, 0.5]
-    loop = tqdm(loader, desc=f"{desc}[Train]", leave=True)
+    loop = tqdm(loader, desc=f"{desc}[Train]", leave=True) if verbose > 1 else loader
     for X_batch, y_batch in loop:
         X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
         y_batch = y_batch.to(model.device)
@@ -153,7 +156,7 @@ def train_epoch(model, loader, criterion, optimizer, desc):
         # Save batch loss
         losses += [loss.item()]
 
-        loop.set_postfix(loss=f"{np.mean(losses):.4f}")
+        if type(loop) is tqdm: loop.set_postfix(loss=f"{np.mean(losses):.4f}")
 
     # Calculate Training Mean Loss
     train_loss = np.mean(losses)
@@ -161,7 +164,7 @@ def train_epoch(model, loader, criterion, optimizer, desc):
     return model, optimizer, train_loss
 
 
-def validate_epoch(model, loader, criterion, y_scaler, desc):
+def validate_epoch(model, loader, criterion, y_scaler, desc, verbose):
     model.eval()
     losses = []
     y_true, y_pred = [], []
@@ -169,7 +172,7 @@ def validate_epoch(model, loader, criterion, y_scaler, desc):
 
     # Disable gradient computation
     with torch.no_grad():
-        loop = tqdm(loader, desc=f"{desc}[ Val ]", leave=True)
+        loop = tqdm(loader, desc=f"{desc}[ Val ]", leave=True) if verbose > 1 else loader
         for X_batch, y_batch in loop:
             X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
             y_batch = y_batch.to(model.device)
@@ -191,7 +194,7 @@ def validate_epoch(model, loader, criterion, y_scaler, desc):
             # Save batch loss
             losses += [loss.item()]
 
-            loop.set_postfix(loss=f"{np.mean(losses):.4f}")
+            if type(loop) is tqdm: loop.set_postfix(loss=f"{np.mean(losses):.4f}")
 
             y_true += [y_batch]
             y_pred += [outputs]
@@ -215,6 +218,7 @@ def validate_epoch(model, loader, criterion, y_scaler, desc):
 
     return y_true, y_pred, val_loss
 
+
 def report_epoch(history, start_time, epoch_txt):
     execution_time = time.time() - start_time
 
@@ -235,6 +239,7 @@ def report_epoch(history, start_time, epoch_txt):
             line += f"{key}: {values[-1]:.4f}{sep}"
     print(line)
 
+
 def report_scores(scores, indentation):
     for d in range(len(scores)):
         line = f"{indentation}target{d}: ["
@@ -245,25 +250,40 @@ def report_scores(scores, indentation):
 
         print(line)
 
-def report_final_model(history):
+
+def report_final_model(history, stop, epochs, verbose):
+    if verbose <= 0: return
     epoch_idx = history["best_epoch"] - 1
 
-    print(f"** Final Model:")
+    # max_len = max([len(str(k)) for k in list(history.keys()) + list(history["scores"].keys())])
+    if stop:
+        print("** Early stop", end=" | ")
+    else:
+        print("** Finished  ", end=" | ")
+    print(f"ran: {str(len(history["train_loss"])).zfill(len(str(epochs)))}/{epochs} epochs", end=" | ")
+    print(f"final: epoch {str(epoch_idx).zfill(len(str(epochs)))}", end=" | ")
+
     for key, values in history.items():
         if key == "scores":
-            for t, scores in enumerate(values):
-                line = f"   target{t}: ["
-
-                for i, (metric, score) in enumerate(scores.items()):
-                    line += f"{metric}: {score[epoch_idx]:.4f}"
-                    line += ", " if i < len(scores) - 1 else "]"
-
-                print(line)
-        elif key == "best_epoch":
-            continue
+            # for t, scores in enumerate(values):
+            #     line = f"   target{t}: ["
+            #
+            #     for i, (metric, score) in enumerate(scores.items()):
+            #         line += f"{metric}: {score[epoch_idx]:.4f}"
+            #         line += ", " if i < len(scores) - 1 else "]"
+            #
+            #     print(line)
+            for m, (metric, scores) in enumerate(values.items()):
+                if m > 0 and verbose <=1: break
+                print(f"{metric}: [", end="")
+                # {(max_len - len(metric)) * " "}
+                for t, score in enumerate(scores[epoch_idx]):
+                    print(f"{score:.2f}", end=", " if t < len(scores[epoch_idx]) - 1 else "], ")
+        elif "loss" in key:
+            print(f"{key}: {values[epoch_idx]:.4f},", end=" ")
         else:
-            print(f"   {key}: {values[epoch_idx]:.4f}")
-
+            continue
+    print()
 
 def early_stopping(model, val_loss, best, patience_counter, patience, epoch):
     stop = False
@@ -274,8 +294,6 @@ def early_stopping(model, val_loss, best, patience_counter, patience, epoch):
         patience_counter += 1
         if patience_counter >= patience:
             stop = True
-            print("** Early Stopping")
-            print(f"** Restore Model State at Epoch {best[2]}")
 
     return stop, best, patience_counter
 
@@ -289,7 +307,8 @@ def train(model,
           epochs=50,
           lr=1e-3,
           weight_decay=1e-5,
-          patience=5
+          patience=5,
+          verbose=2,
           ):
     optimizer = optim.Adam(
         model.parameters(),
@@ -311,9 +330,11 @@ def train(model,
     history = {
         "train_loss": [],
         "val_loss": [],
-        "scores": [{metric: [] for metric in metrics} for _ in range(val_loader.dataset.__dim__()[1])]
+        # "scores": [{metric: [] for metric in metrics} for _ in range(val_loader.dataset.__dim__()[1])],
+        "scores": {metric: [] for metric in metrics}
     }
-
+    stop = False
+    if verbose > 0: print("** Training Running...")
     for epoch in range(1, epochs + 1):
         start_time = time.time()
 
@@ -322,11 +343,11 @@ def train(model,
 
         # Training phase
         # train_loop = tqdm(train_loader, desc=f"{epoch_txt}[Train]", leave=True)
-        model, optimizer, train_loss = train_epoch(model, train_loader, criterion, optimizer, epoch_txt)
+        model, optimizer, train_loss = train_epoch(model, train_loader, criterion, optimizer, epoch_txt, verbose)
 
         # Validation phase
         # val_loop = tqdm(val_loader, desc=f"{indentation}[Val]", leave=True)
-        y_true, y_pred, val_loss = validate_epoch(model, val_loader, criterion, y_scaler, indentation)
+        y_true, y_pred, val_loss = validate_epoch(model, val_loader, criterion, y_scaler, indentation, verbose)
 
         # Evaluate & Report Results
         if len(y_true.shape) > 1:
@@ -341,10 +362,13 @@ def train(model,
         history["val_loss"].append(val_loss)
         # history["scores"].append(scores)
 
-        for t in range(len(scores)):
-            for metric in metrics:
-                history["scores"][t][metric].append(scores[t][metric])
+        # for t in range(len(scores)):
+        #     for metric in metrics:
+        #         history["scores"][t][metric].append(scores[t][metric])
 
+        scores = {metric: [t_scores[metric] for t_scores in scores] for metric in metrics}
+        for metric in metrics:
+            history["scores"][metric].append(scores[metric])
 
         # Scheduler
         # If validation loss stops improving, lower learning rate automatically
@@ -361,12 +385,95 @@ def train(model,
     model.load_state_dict(best[1])
 
     history["best_epoch"] = best[2]
-    report_final_model(history)
+
+    history["train_loss"] = np.array(history["train_loss"], dtype=np.float32)
+    history["val_loss"] = np.array(history["val_loss"], dtype=np.float32)
+    for metric in metrics:
+        history["scores"][metric] = np.array(history["scores"][metric], dtype=np.float32)
+
+    report_final_model(history, stop, epochs, verbose)
 
     return model, history
 
 
-def tune(param_grid, X_dim, y_dim, device):
+
+activation_funcs = {
+    "relu": nn.ReLU,
+    "gelu": nn.GELU,
+}
+
+def tune(param_grid,
+         X_dim,
+         y_dim,
+         train_loader,
+         val_loader,
+         criterion,
+         metrics,
+         device,
+         log_metrics,
+         y_scaler=None,
+         chronology_target="years"):
+
+    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(y_dim)])
+    print_row_header(column_widths)
+    i = 0
+    results = []
     for params in ParameterGrid(param_grid):
-        print(f"\n🔎 Running with params: {params}")
-    print(len(ParameterGrid(param_grid)))
+        # if i > 2: break
+        # print(f"\n🔎 Running with params: {params}")
+
+        # print("\n** params: {", end="")
+        # for param, value in params.items():
+        #     if value == nn.ReLU:
+        #         value_p = "relu"
+        #     elif value == nn.GELU:
+        #         value_p = "gelu"
+        #     else:
+        #         value_p = value
+        #     print(f"{param}: {value_p}", end=", ")
+        # print("}")
+
+        print_row_nn(column_widths, params, ends=False)
+
+        # Initialize Model
+        model = PotteryChronologyPredictor(
+            X_dim,
+            y_dim,
+            params["hidden_size"],
+            device=device,
+            activation=activation_funcs[params["activation"]],
+            dropout=params["dropout"],
+            blocks=params["blocks"],
+            hidden_size_pattern=params["hidden_size_pattern"],
+            chronology_target=chronology_target
+        )
+
+        # Train Model
+        model, history = train(
+            model,
+            train_loader,
+            val_loader,
+            criterion,
+            metrics,
+            y_scaler,
+            lr=params["lr"],
+            weight_decay=params["weight_decay"],
+            verbose=0
+        )
+
+        best_epoch = history["best_epoch"]
+        final_losses = {key: loss[best_epoch - 1] for key, loss in history.items() if "loss" in key}
+        final_scores = {f"{metric}_{t}": score for metric, scores in history["scores"].items() for t, score in enumerate(scores[best_epoch - 1])}
+
+        print_row_nn(column_widths, final_losses | final_scores, ends=True)
+
+        results.append(
+            params |
+            final_losses |
+            final_scores
+        )
+
+        # print(results[-1])
+        i += 1
+    print_row_divider(column_widths)
+    return pd.DataFrame(results)

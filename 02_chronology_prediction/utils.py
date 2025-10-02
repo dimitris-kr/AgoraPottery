@@ -473,6 +473,16 @@ def get_column_widths(targets, feature_sets, deciding_metric, param_grid):
 
     return column_widths
 
+def get_column_widths_nn(param_grid, extra_metrics):
+    max_num_str = "0000.0000"
+
+    column_widths = {key: get_column_width(values + [key]) for key, values in param_grid.items() if len(values) > 1}
+
+    column_widths["val_loss"] = get_column_width([max_num_str, "val_loss"])
+
+    column_widths = column_widths | {metric: get_column_width([max_num_str, metric]) for metric in extra_metrics}
+
+    return column_widths
 
 def print_row(column_widths, values, col_divider="|", padding_char=" "):
     for col, width in column_widths.items():
@@ -480,6 +490,23 @@ def print_row(column_widths, values, col_divider="|", padding_char=" "):
         padding = width - len(value) + 1
         print(col_divider + (padding_char * padding) + value, end=padding_char)
     print(col_divider)
+
+def print_row_nn(column_widths, values, col_divider="|", padding_char=" ", ends=True):
+    for col, width in column_widths.items():
+        # print(col)
+        if col not in values.keys():
+            # print("NOT IN VALUES")
+            continue
+        value = values[col]
+        if type(value) == float or type(value) == np.float32:
+            value = f"{value:.4f}"
+        else:
+            value = str(value)
+        padding = width - len(value) + 1
+        print(col_divider + (padding_char * padding) + value, end=padding_char)
+
+    if ends:
+        print(col_divider)
 
 
 def print_row_divider(column_widths):
@@ -1087,12 +1114,9 @@ def get_device():
     return device
 
 
-def plot_history(history, target_names=None):
-    n_targets = len(history["scores"][0])
+def plot_history(history, target_names):
+    n_targets = len(target_names)
     epochs = range(1, len(history["train_loss"]) + 1)
-
-    if target_names is None:
-        target_names = [f"Target {i}" for i in range(n_targets)]
 
     # Define grid
     plt.style.use('seaborn-v0_8')
@@ -1115,20 +1139,21 @@ def plot_history(history, target_names=None):
     # ax.set_ylim([0, max(history["train_loss"] + history["val_loss"]) * 1.05])
     ax.legend()
 
-    for t, scores in enumerate(history["scores"]):
-        if set(scores.keys()).issubset(metrics_r.keys()):
-            subplots = subplots_r
-        elif set(scores.keys()).issubset(metrics_c.keys()):
-            subplots = subplots_c
-        else:
-            continue
+    if set(history["scores"].keys()).issubset(metrics_r.keys()):
+        subplots = subplots_r
+    elif set(history["scores"].keys()).issubset(metrics_c.keys()):
+        subplots = subplots_c
+    else:
+        plt.tight_layout()
+        plt.show()
+        return
+
+    for t in range(n_targets):
         for idx, subplot in enumerate(subplots):
             ax = fig.add_subplot(gs[t + 1, idx] if len(subplots) > 1 else gs[t + 1, :])  # place in grid
-
             for metric, color in zip(subplot['metrics'], subplot['colors']):
-                if metric not in scores: continue
-                ax.plot(epochs, scores[metric], marker='o', label=metric.upper(), color=color)
-
+                if metric not in history["scores"]: continue
+                ax.plot(epochs, history["scores"][metric][:, t], marker='o', label=metric.upper(), color=color)
             ax.axvline(x=history["best_epoch"], color='tab:red', linestyle='--', alpha=0.8)
             if idx == 0: ax.set_title(f"{target_names[t]} – Validation Scores")
             ax.set_xlabel("Epoch")
@@ -1136,6 +1161,23 @@ def plot_history(history, target_names=None):
             ax.set_xticks(xticks)
             # ax.set_ylim([0, (1 if extra_metric in metrics_c or extra_metric == "r2" else max(score_per_epoch) * 1.05)])
             ax.legend()
+
+    # for t, scores in enumerate(history["scores"]):
+    #
+    #     for idx, subplot in enumerate(subplots):
+    #         ax = fig.add_subplot(gs[t + 1, idx] if len(subplots) > 1 else gs[t + 1, :])  # place in grid
+    #
+    #         for metric, color in zip(subplot['metrics'], subplot['colors']):
+    #             if metric not in scores: continue
+    #             ax.plot(epochs, scores[metric], marker='o', label=metric.upper(), color=color)
+    #
+    #         ax.axvline(x=history["best_epoch"], color='tab:red', linestyle='--', alpha=0.8)
+    #         if idx == 0: ax.set_title(f"{target_names[t]} – Validation Scores")
+    #         ax.set_xlabel("Epoch")
+    #         ax.set_ylabel(subplot['ylabel'])
+    #         ax.set_xticks(xticks)
+    #         # ax.set_ylim([0, (1 if extra_metric in metrics_c or extra_metric == "r2" else max(score_per_epoch) * 1.05)])
+    #         ax.legend()
 
     plt.tight_layout()
     plt.show()
