@@ -414,26 +414,20 @@ def tune(param_grid,
          y_scaler=None,
          chronology_target="years"):
 
-    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(y_dim)])
+    combo_count = len(ParameterGrid(param_grid))
+
+    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(y_dim)], combo_count)
     print_row_header(column_widths)
-    i = 0
+
     results = []
+    combo_idx = 0
+    N = 5
+    M = 50
+    show = False
     for params in ParameterGrid(param_grid):
-        # if i > 2: break
-        # print(f"\n🔎 Running with params: {params}")
-
-        # print("\n** params: {", end="")
-        # for param, value in params.items():
-        #     if value == nn.ReLU:
-        #         value_p = "relu"
-        #     elif value == nn.GELU:
-        #         value_p = "gelu"
-        #     else:
-        #         value_p = value
-        #     print(f"{param}: {value_p}", end=", ")
-        # print("}")
-
-        print_row_nn(column_widths, params, ends=False)
+        show = combo_idx % M < N
+        if show:
+            print_row_nn(column_widths, {"combo_idx": (combo_idx + 1, combo_count)} | params , ends=False)
 
         # Initialize Model
         model = PotteryChronologyPredictor(
@@ -465,7 +459,11 @@ def tune(param_grid,
         final_losses = {key: loss[best_epoch - 1] for key, loss in history.items() if "loss" in key}
         final_scores = {f"{metric}_{t}": score for metric, scores in history["scores"].items() for t, score in enumerate(scores[best_epoch - 1])}
 
-        print_row_nn(column_widths, final_losses | final_scores, ends=True)
+        if show:
+            print_row_nn(column_widths, final_losses | final_scores, ends=True)
+        else:
+            print("/", end="")
+            if combo_idx % M == M - 1 or combo_idx == combo_count - 1: print()
 
         results.append(
             params |
@@ -473,7 +471,14 @@ def tune(param_grid,
             final_scores
         )
 
-        # print(results[-1])
-        i += 1
+        combo_idx += 1
+
     print_row_divider(column_widths)
-    return pd.DataFrame(results)
+
+    results = pd.DataFrame(results)
+
+    best_result = results.sort_values("val_loss", ascending=True).head(1).to_dict(orient="records")[0]
+    print_row_nn(column_widths, {"combo_idx": "BEST"} | best_result, ends=True)
+    print_row_divider(column_widths)
+
+    return results, best_result

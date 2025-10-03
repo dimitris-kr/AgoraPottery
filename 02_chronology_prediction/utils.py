@@ -473,16 +473,19 @@ def get_column_widths(targets, feature_sets, deciding_metric, param_grid):
 
     return column_widths
 
-def get_column_widths_nn(param_grid, extra_metrics):
+
+def get_column_widths_nn(param_grid, extra_metrics, combo_count):
     max_num_str = "0000.0000"
-
-    column_widths = {key: get_column_width(values + [key]) for key, values in param_grid.items() if len(values) > 1}
-
+    combo_str = f"{combo_count}/{combo_count}"
+    column_widths = {"combo_idx": get_column_width([combo_str, "combo_idx"]),}
+    for key, values in param_grid.items():
+        if len(values) <= 1: continue
+        column_widths[key] = get_column_width(values + [key])
     column_widths["val_loss"] = get_column_width([max_num_str, "val_loss"])
-
-    column_widths = column_widths | {metric: get_column_width([max_num_str, metric]) for metric in extra_metrics}
-
+    for metric in extra_metrics:
+        column_widths[metric] = get_column_width([max_num_str, metric])
     return column_widths
+
 
 def print_row(column_widths, values, col_divider="|", padding_char=" "):
     for col, width in column_widths.items():
@@ -491,14 +494,16 @@ def print_row(column_widths, values, col_divider="|", padding_char=" "):
         print(col_divider + (padding_char * padding) + value, end=padding_char)
     print(col_divider)
 
+
 def print_row_nn(column_widths, values, col_divider="|", padding_char=" ", ends=True):
     for col, width in column_widths.items():
-        # print(col)
-        if col not in values.keys():
-            # print("NOT IN VALUES")
-            continue
+        if col not in values.keys(): continue
         value = values[col]
-        if type(value) == float or type(value) == np.float32:
+        if type(value) == tuple:
+            idx = str(value[0])
+            total = str(value[1])
+            value = f"{idx.zfill(len(total))}/{total}"
+        elif (type(value) == float or type(value) == np.float32) and ("loss" in col or col.split("_")[0] in (metrics_r | metrics_c).keys()):
             value = f"{value:.4f}"
         else:
             value = str(value)
@@ -1072,6 +1077,7 @@ def train_val_split(X, y):
 
     return X, y
 
+
 def scale(arrays):
     scaler = StandardScaler()
     arrays = {
@@ -1079,6 +1085,7 @@ def scale(arrays):
         for subset, array in arrays.items()
     }
     return arrays, scaler,
+
 
 # Get Data Dimensions
 def get_dimensions(X, y, le=None, verbose=True):
