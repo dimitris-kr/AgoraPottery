@@ -274,7 +274,7 @@ def report_final_model(history, stop, epochs, verbose):
             #
             #     print(line)
             for m, (metric, scores) in enumerate(values.items()):
-                if m > 0 and verbose <=1: break
+                if m > 0 and verbose <= 1: break
                 print(f"{metric}: [", end="")
                 # {(max_len - len(metric)) * " "}
                 for t, score in enumerate(scores[epoch_idx]):
@@ -284,6 +284,7 @@ def report_final_model(history, stop, epochs, verbose):
         else:
             continue
     print()
+
 
 def early_stopping(model, val_loss, best, patience_counter, patience, epoch):
     stop = False
@@ -396,11 +397,11 @@ def train(model,
     return model, history
 
 
-
 activation_funcs = {
     "relu": nn.ReLU,
     "gelu": nn.GELU,
 }
+
 
 def tune(param_grid,
          X_dim,
@@ -410,24 +411,30 @@ def tune(param_grid,
          criterion,
          metrics,
          device,
-         log_metrics,
          y_scaler=None,
+         log_metrics=None,
+         log_N=2,
+         log_per_M=50,
          chronology_target="years"):
-
+    if log_metrics is None:
+        log_metrics = []
+    start_time = time.time()
     combo_count = len(ParameterGrid(param_grid))
 
-    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(y_dim)], combo_count)
+    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(y_dim)],
+                                         combo_count)
     print_row_header(column_widths)
 
-    results = []
+    hp_result = {
+        "val_loss": float('inf'),
+    }
+    hp_history = []
     combo_idx = 0
-    N = 5
-    M = 50
-    show = False
     for params in ParameterGrid(param_grid):
-        show = combo_idx % M < N
-        if show:
-            print_row_nn(column_widths, {"combo_idx": (combo_idx + 1, combo_count)} | params , ends=False)
+        new_best = False
+        log = combo_idx % log_per_M < log_N
+        if log:
+            print_row_nn(column_widths, {"combo_idx": (combo_idx + 1, combo_count)} | params, ends=False)
 
         # Initialize Model
         model = PotteryChronologyPredictor(
@@ -456,29 +463,63 @@ def tune(param_grid,
         )
 
         best_epoch = history["best_epoch"]
-        final_losses = {key: loss[best_epoch - 1] for key, loss in history.items() if "loss" in key}
-        final_scores = {f"{metric}_{t}": score for metric, scores in history["scores"].items() for t, score in enumerate(scores[best_epoch - 1])}
+        final_losses = {key: float(loss[best_epoch - 1]) for key, loss in history.items() if "loss" in key}
+        final_scores = {metric: list(map(float, scores[best_epoch - 1])) for metric, scores in history["scores"].items()}
+        final_scores_flat = flatten_scores_by_target(final_scores)
 
-        if show:
-            print_row_nn(column_widths, final_losses | final_scores, ends=True)
-        else:
-            print("/", end="")
-            if combo_idx % M == M - 1 or combo_idx == combo_count - 1: print()
 
-        results.append(
+        hp_history.append(
             params |
             final_losses |
-            final_scores
+            final_scores_flat
         )
+
+        if final_losses["val_loss"] < hp_result["val_loss"]:
+            hp_result["val_loss"] = final_losses["val_loss"]
+            hp_result["train_loss"] = final_losses["train_loss"]
+            hp_result["params"] = params
+            hp_result["scores"] = final_scores
+            new_best = True
+
+        if log:
+            print_row_nn(column_widths, final_losses | final_scores_flat, new_best=new_best, ends=True)
+        elif not log and new_best:
+            if combo_idx % log_per_M != log_N: print()
+            print_row_nn(column_widths, {"combo_idx": (combo_idx + 1, combo_count)} | params | final_losses | final_scores_flat, new_best=new_best, ends=True)
+        else:
+            print("/", end="")
+            if combo_idx % log_per_M == log_per_M - 1 or combo_idx == combo_count - 1: print()
 
         combo_idx += 1
 
+    hp_history = pd.DataFrame(hp_history)
+
+    tuning_time = time.time() - start_time
+    hp_result["time"] = tuning_time
+
     print_row_divider(column_widths)
-
-    results = pd.DataFrame(results)
-
-    best_result = results.sort_values("val_loss", ascending=True).head(1).to_dict(orient="records")[0]
-    print_row_nn(column_widths, {"combo_idx": "BEST"} | best_result, ends=True)
+    hp_result_log = {
+        "combo_idx": "BEST",
+        **hp_result["params"],
+        "val_loss": hp_result["val_loss"],
+        "train_loss": hp_result["train_loss"],
+        **flatten_scores_by_target(hp_result["scores"])
+    }
+    print_row_nn(column_widths, hp_result_log, ends=True)
     print_row_divider(column_widths)
+    print(f"Finished in {fmt_time(tuning_time)}")
 
-    return results, best_result
+    # for key, value in hp_result.items():
+    #     if "loss" in key:
+    #         hp_result[key] = float(value)
+    #
+    # hp_result["scores"] =
+
+    return hp_result, hp_history
+
+def flatten_scores_by_target(scores):
+    return {
+        f"{metric}_{t}": score
+        for metric, m_scores in scores.items()
+        for t, score in enumerate(m_scores)
+    }

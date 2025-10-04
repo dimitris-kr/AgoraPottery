@@ -495,7 +495,7 @@ def print_row(column_widths, values, col_divider="|", padding_char=" "):
     print(col_divider)
 
 
-def print_row_nn(column_widths, values, col_divider="|", padding_char=" ", ends=True):
+def print_row_nn(column_widths, values, col_divider="|", padding_char=" ", new_best=False, ends=True):
     for col, width in column_widths.items():
         if col not in values.keys(): continue
         value = values[col]
@@ -511,7 +511,9 @@ def print_row_nn(column_widths, values, col_divider="|", padding_char=" ", ends=
         print(col_divider + (padding_char * padding) + value, end=padding_char)
 
     if ends:
-        print(col_divider)
+        row_end = col_divider
+        if new_best: row_end += " *"
+        print(row_end)
 
 
 def print_row_divider(column_widths):
