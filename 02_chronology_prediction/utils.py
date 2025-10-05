@@ -160,7 +160,7 @@ def load_best_params(path):
         # Convert stringified tuples back to tuple keys
         return {
             model: {
-                eval(k): v for k, v in param_dict.items()
+                (eval(k) if k.startswith("(") else k): v for k, v in param_dict.items()
             } for model, param_dict in best_params.items()
         }
 
@@ -474,7 +474,7 @@ def get_column_widths(targets, feature_sets, deciding_metric, param_grid):
     return column_widths
 
 
-def get_column_widths_nn(param_grid, extra_metrics, combo_count):
+def get_column_widths_nn(param_grid, extra_metrics, combo_count=10):
     max_num_str = "0000.0000"
     combo_str = f"{combo_count}/{combo_count}"
     column_widths = {"combo_idx": get_column_width([combo_str, "combo_idx"]),}
@@ -546,6 +546,27 @@ def print_best_params(column_widths, best_params, deciding_metric):
         if target_prev and target_prev != target: print_row_divider(column_widths)
         print_row(column_widths, get_print_values(method, target, deciding_metric, hp_result))
         target_prev = target
+    print_row_divider(column_widths)
+
+
+def flatten_scores_by_target(scores):
+    return {
+        f"{metric}_{t}": score
+        for metric, m_scores in scores.items()
+        for t, score in enumerate(m_scores)
+    }
+
+def print_best_params_nn(best_params, param_grid, y_dim, log_metrics):
+    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(y_dim)])
+    print_row_header(column_widths)
+    tuning_result_log = {
+        "combo_idx": "BEST",
+        **best_params["params"],
+        "val_loss": best_params["val_loss"],
+        "train_loss": best_params["train_loss"],
+        **flatten_scores_by_target(best_params["scores"])
+    }
+    print_row_nn(column_widths, tuning_result_log, ends=True)
     print_row_divider(column_widths)
 
 

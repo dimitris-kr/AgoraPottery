@@ -8,7 +8,7 @@ from sklearn.model_selection import ParameterGrid
 from tqdm.std import tqdm
 
 from utils import evaluate, fmt_time, plot_history, get_column_widths_nn, print_row_header, print_row, \
-    print_row_divider, print_row_nn
+    print_row_divider, print_row_nn, flatten_scores_by_target
 import time
 
 
@@ -425,10 +425,10 @@ def tune(param_grid,
                                          combo_count)
     print_row_header(column_widths)
 
-    hp_result = {
+    tuning_result = {
         "val_loss": float('inf'),
     }
-    hp_history = []
+    tuning_history = []
     combo_idx = 0
     for params in ParameterGrid(param_grid):
         new_best = False
@@ -468,17 +468,17 @@ def tune(param_grid,
         final_scores_flat = flatten_scores_by_target(final_scores)
 
 
-        hp_history.append(
+        tuning_history.append(
             params |
             final_losses |
             final_scores_flat
         )
 
-        if final_losses["val_loss"] < hp_result["val_loss"]:
-            hp_result["val_loss"] = final_losses["val_loss"]
-            hp_result["train_loss"] = final_losses["train_loss"]
-            hp_result["params"] = params
-            hp_result["scores"] = final_scores
+        if final_losses["val_loss"] < tuning_result["val_loss"]:
+            tuning_result["val_loss"] = final_losses["val_loss"]
+            tuning_result["train_loss"] = final_losses["train_loss"]
+            tuning_result["params"] = params
+            tuning_result["scores"] = final_scores
             new_best = True
 
         if log:
@@ -492,34 +492,29 @@ def tune(param_grid,
 
         combo_idx += 1
 
-    hp_history = pd.DataFrame(hp_history)
+    tuning_history = pd.DataFrame(tuning_history)
 
     tuning_time = time.time() - start_time
-    hp_result["time"] = tuning_time
+    tuning_result["time"] = tuning_time
 
     print_row_divider(column_widths)
-    hp_result_log = {
+    tuning_result_log = {
         "combo_idx": "BEST",
-        **hp_result["params"],
-        "val_loss": hp_result["val_loss"],
-        "train_loss": hp_result["train_loss"],
-        **flatten_scores_by_target(hp_result["scores"])
+        **tuning_result["params"],
+        "val_loss": tuning_result["val_loss"],
+        "train_loss": tuning_result["train_loss"],
+        **flatten_scores_by_target(tuning_result["scores"])
     }
-    print_row_nn(column_widths, hp_result_log, ends=True)
+    print_row_nn(column_widths, tuning_result_log, ends=True)
     print_row_divider(column_widths)
     print(f"Finished in {fmt_time(tuning_time)}")
 
-    # for key, value in hp_result.items():
+    # for key, value in tuning_result.items():
     #     if "loss" in key:
-    #         hp_result[key] = float(value)
+    #         tuning_result[key] = float(value)
     #
-    # hp_result["scores"] =
+    # tuning_result["scores"] =
 
-    return hp_result, hp_history
+    return tuning_result, tuning_history
 
-def flatten_scores_by_target(scores):
-    return {
-        f"{metric}_{t}": score
-        for metric, m_scores in scores.items()
-        for t, score in enumerate(m_scores)
-    }
+
