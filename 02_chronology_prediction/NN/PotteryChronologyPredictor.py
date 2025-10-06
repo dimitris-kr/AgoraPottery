@@ -308,10 +308,10 @@ def train(model,
           epochs=50,
           lr=1e-3,
           weight_decay=1e-5,
-          patience=5,
+          patience=10,
           verbose=2,
           ):
-    optimizer = optim.Adam(
+    optimizer = optim.AdamW(
         model.parameters(),
         lr=lr,
         weight_decay=weight_decay
@@ -430,6 +430,7 @@ def tune(param_grid,
     }
     tuning_history = []
     combo_idx = 0
+    new_line_start = True
     for params in ParameterGrid(param_grid):
         new_best = False
         log = combo_idx % log_per_M < log_N
@@ -483,12 +484,18 @@ def tune(param_grid,
 
         if log:
             print_row_nn(column_widths, final_losses | final_scores_flat, new_best=new_best, ends=True)
+            new_line_start = True
         elif not log and new_best:
-            if combo_idx % log_per_M != log_N: print()
+            if not new_line_start: print()
             print_row_nn(column_widths, {"combo_idx": (combo_idx + 1, combo_count)} | params | final_losses | final_scores_flat, new_best=new_best, ends=True)
+            new_line_start = True
         else:
             print("/", end="")
-            if combo_idx % log_per_M == log_per_M - 1 or combo_idx == combo_count - 1: print()
+            if combo_idx % log_per_M == log_per_M - 1 or combo_idx == combo_count - 1:
+                print()
+                new_line_start = True
+            else:
+                new_line_start = False
 
         combo_idx += 1
 

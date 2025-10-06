@@ -164,6 +164,15 @@ def load_best_params(path):
             } for model, param_dict in best_params.items()
         }
 
+def load_tuning_history(path):
+    # Initialize if not exists
+    if not os.path.exists(path):
+        return {}
+
+    tuning_histories = pd.read_csv(path)
+    tuning_histories = {model_ft: model_ft_history.drop(columns='model_feature_type')
+                        for model_ft, model_ft_history in tuning_histories.groupby('model_feature_type')}
+    return tuning_histories
 
 # SAVE BEST PARAMS
 
@@ -183,6 +192,17 @@ def save_best_params(path, best_params, flag_new_model):
         json.dump(serializable_params, f, indent=2)
 
     print(f"✅ Saved best parameters to {path}")
+
+
+def save_tuning_history(path, tuning_histories, flag_new_model):
+    if not flag_new_model: return
+
+    tuning_history_dfs = [tuning_history.assign(model_feature_type=ft)
+                          for ft, tuning_history in tuning_histories.items()]
+
+    tuning_history_full = pd.concat(tuning_history_dfs, axis=0, ignore_index=True)
+    tuning_history_full.to_csv(path, index=False)
+    print(f"✅ Saved tuning history to {path}")
 
 
 # COMBINE FEATURES
@@ -477,7 +497,7 @@ def get_column_widths(targets, feature_sets, deciding_metric, param_grid):
 def get_column_widths_nn(param_grid, extra_metrics, combo_count=10):
     max_num_str = "0000.0000"
     combo_str = f"{combo_count}/{combo_count}"
-    column_widths = {"combo_idx": get_column_width([combo_str, "combo_idx"]),}
+    column_widths = {"combo_idx": get_column_width([combo_str, "combo_idx"]), }
     for key, values in param_grid.items():
         if len(values) <= 1: continue
         column_widths[key] = get_column_width(values + [key])
@@ -503,7 +523,8 @@ def print_row_nn(column_widths, values, col_divider="|", padding_char=" ", new_b
             idx = str(value[0])
             total = str(value[1])
             value = f"{idx.zfill(len(total))}/{total}"
-        elif (type(value) == float or type(value) == np.float32) and ("loss" in col or col.split("_")[0] in (metrics_r | metrics_c).keys()):
+        elif (type(value) == float or type(value) == np.float32) and (
+                "loss" in col or col.split("_")[0] in (metrics_r | metrics_c).keys()):
             value = f"{value:.4f}"
         else:
             value = str(value)
@@ -556,7 +577,9 @@ def flatten_scores_by_target(scores):
         for t, score in enumerate(m_scores)
     }
 
+
 def print_best_params_nn(best_params, param_grid, y_dim, log_metrics):
+    print(f"Execution Time: {fmt_time(best_params["time"])}")
     column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(y_dim)])
     print_row_header(column_widths)
     tuning_result_log = {
@@ -1210,4 +1233,162 @@ def plot_history(history, target_names):
     #         ax.legend()
 
     plt.tight_layout()
+    plt.show()
+
+import re
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+def plot_tuning_heatmap(
+        df,
+        param_grid,
+        loss_range=(0,1),
+        value_col="val_loss",
+        cmap="RdYlGn_r",
+        figsize=(11, 9),
+        annot_fmt=".3f"
+):
+    """
+    Create a lower-triangle parameter interaction heatmap based on parameter grid structure.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Results dataframe with all tuning results.
+    param_grid : dict
+        The same parameter grid used for tuning (parameter: list of possible values).
+    value_col : str
+        Column in df to use as heatmap value (e.g., validation loss).
+    cmap : str
+        Matplotlib colormap name.
+    figsize : tuple
+        Size of the full figure.
+    annot_fmt : str
+        Format for annotated cell values.
+    """
+
+    # 1️⃣ Build ordered parameter labels (e.g. hidden_size=256)
+    params = list(param_grid.keys())
+    all_labels = []
+    for p in params:
+        for v in param_grid[p]:
+            all_labels.append(f"{p}={v}")
+
+    # 2️⃣ Initialize empty matrix
+    mat = pd.DataFrame(index=all_labels, columns=all_labels, dtype=float)
+
+    # 3️⃣ Fill matrix with mean val_loss per parameter pair
+    for p1 in params:
+        for v1 in param_grid[p1]:
+            for p2 in params:
+                for v2 in param_grid[p2]:
+                    if p1 == p2:
+                        continue
+                    subset = df[(df[p1] == v1) & (df[p2] == v2)]
+                    if not subset.empty:
+                        mat.loc[f"{p1}={v1}", f"{p2}={v2}"] = subset[value_col].mean()
+
+    # 4️⃣ Mask upper triangle + same-parameter cells
+    mask = np.triu(np.ones_like(mat, dtype=bool))
+    for i, r in enumerate(mat.index):
+        for j, c in enumerate(mat.columns):
+            if r.split("=")[0] == c.split("=")[0]:
+                mask[i, j] = True
+
+    # 5️⃣ Plot setup
+    fig, ax = plt.subplots(figsize=figsize)
+    sns.heatmap(
+        mat,
+        mask=mask,
+        cmap=cmap,
+        annot=True,
+        fmt=annot_fmt,
+        linewidths=0.5,
+        linecolor="gray",
+        cbar_kws={"label": value_col},
+        ax=ax,
+        vmin=loss_range[0],
+        vmax=loss_range[1]
+    )
+
+    # 6️⃣ Move x-axis to top
+    ax.xaxis.tick_top()
+    ax.xaxis.set_label_position('top')
+
+    # 7️⃣ Simplify tick labels → show only values, not param names
+    def simplify(label):
+        simple_label = str(label).split("=")[1]
+        simple_label = re.sub(r'[^a-zA-Z0-9-]', '', simple_label)
+        if len(simple_label) > 5: simple_label = simple_label[:5] + "."
+        return simple_label
+
+    ax.set_xticklabels([simplify(l) for l in ax.get_xticklabels()], rotation=45, ha="left")
+    ax.set_yticklabels([simplify(l) for l in ax.get_yticklabels()], rotation=0)
+
+    # 8️⃣ Compute parameter group boundaries
+    param_boundaries = []
+    offset = 0
+    for p in params:
+        offset += len(param_grid[p])
+        param_boundaries.append(offset)
+
+    # Draw dividing lines between parameter groups
+    for b in param_boundaries[:-1]:
+        ax.axhline(b, color="black", lw=1.2)
+        ax.axvline(b, color="black", lw=1.2)
+
+    # 9️⃣ Add group labels on the LEFT and top
+    midpoints = []
+    prev = 0
+    for b in param_boundaries:
+        midpoints.append((prev + b) / 2)
+        prev = b
+
+    # ✅ Left-side labels (moved from right)
+    for m, p in zip(midpoints, params):
+        ax.text(-1, m, p, va="center", ha="right", rotation=90, fontsize=10, fontweight="bold")
+
+    # Top labels (unchanged)
+    for m, p in zip(midpoints, params):
+        ax.text(m, -1, p, va="bottom", ha="center", rotation=0, fontsize=10, fontweight="bold")
+
+    plt.title("Parameter Interaction Heatmap (Lower Triangle)", pad=80, fontsize=14, fontweight="bold")
+    plt.tight_layout()
+    plt.show()
+
+
+def print_tuning_top_results(df, topN=5, top_by=None):
+    if top_by is None:
+        top_by = ["val_loss"]
+    for metric in top_by:
+        asc = "loss" in metric or (metric in metrics_r and metric != "r2")
+        metric_cols = [col for col in df.columns if col.startswith(metric)]
+        for metric_col in metric_cols:
+            print(f"\nTop {topN} by {metric_col}:")
+            display(df.sort_values(metric_col, ascending=asc).head(topN))
+
+def plot_param_loss_corr(df, param_grid):
+    df_encoded = df.copy()
+
+    # Encode non-numeric columns
+    for col in df.columns:
+        if df[col].dtype == "object":
+            df_encoded[col] = LabelEncoder().fit_transform(df[col])
+
+    corr_with_val_loss = df_encoded.corr(numeric_only=True)["val_loss"]
+    corr_with_val_loss = corr_with_val_loss.loc[list(param_grid.keys())].sort_values(ascending=False)
+
+    plt.figure(figsize=(4, len(corr_with_val_loss) * 0.4))
+    sns.heatmap(
+        corr_with_val_loss.to_frame(),
+        annot=True,
+        cmap="coolwarm",
+        center=0,
+        vmin=-1,
+        vmax=1,
+    )
+    plt.title("Correlation of Parameters with Validation Loss")
     plt.show()
