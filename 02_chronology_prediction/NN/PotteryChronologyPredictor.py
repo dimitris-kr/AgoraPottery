@@ -121,6 +121,13 @@ class PotteryChronologyPredictor(nn.Module):
 
 
 # TRAIN
+
+activation_funcs = {
+    "relu": nn.ReLU,
+    "gelu": nn.GELU,
+}
+
+
 def train_epoch(model, loader, criterion, optimizer, desc, verbose):
     model.train()
     losses = []
@@ -307,7 +314,7 @@ def train(model,
           y_scaler=None,
           epochs=50,
           lr=1e-3,
-          weight_decay=1e-5,
+          weight_decay=1e-6,
           patience=10,
           verbose=2,
           ):
@@ -397,11 +404,7 @@ def train(model,
     return model, history
 
 
-activation_funcs = {
-    "relu": nn.ReLU,
-    "gelu": nn.GELU,
-}
-
+# TUNE
 
 def tune(param_grid,
          X_dim,
@@ -459,15 +462,15 @@ def tune(param_grid,
             metrics,
             y_scaler,
             lr=params["lr"],
-            weight_decay=params["weight_decay"],
+            # weight_decay=params["weight_decay"],
             verbose=0
         )
 
         best_epoch = history["best_epoch"]
         final_losses = {key: float(loss[best_epoch - 1]) for key, loss in history.items() if "loss" in key}
-        final_scores = {metric: list(map(float, scores[best_epoch - 1])) for metric, scores in history["scores"].items()}
+        final_scores = {metric: list(map(float, scores[best_epoch - 1])) for metric, scores in
+                        history["scores"].items()}
         final_scores_flat = flatten_scores_by_target(final_scores)
-
 
         tuning_history.append(
             params |
@@ -487,7 +490,9 @@ def tune(param_grid,
             new_line_start = True
         elif not log and new_best:
             if not new_line_start: print()
-            print_row_nn(column_widths, {"combo_idx": (combo_idx + 1, combo_count)} | params | final_losses | final_scores_flat, new_best=new_best, ends=True)
+            print_row_nn(column_widths,
+                         {"combo_idx": (combo_idx + 1, combo_count)} | params | final_losses | final_scores_flat,
+                         new_best=new_best, ends=True)
             new_line_start = True
         else:
             print("/", end="")
@@ -525,3 +530,84 @@ def tune(param_grid,
     return tuning_result, tuning_history
 
 
+# PREDICT
+
+def predict(model, loader, y_scaler=None, verbose=2):
+    y_pred = []
+    with torch.no_grad():
+        loop = tqdm(loader, desc=f"[Test]", leave=True) if verbose > 1 else loader
+        for X_batch, _ in loader:
+            X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
+
+            # Forward Pass → Predictions
+            outputs = model(X_batch)
+
+            y_pred += [outputs]
+
+        y_pred = torch.cat(y_pred)
+
+        # Classification case -> choose class index with max value
+        if model.chronology_target == "periods":
+            y_pred = y_pred.argmax(dim=1)
+
+        y_pred = y_pred.cpu().numpy()
+
+        if y_scaler:
+            y_pred = y_scaler.inverse_transform(y_pred)
+
+        return y_pred
+
+
+def predict_mc(
+        model,
+        loader,
+        y_scaler=None,
+        mc_samples=1,
+        ci_level=0.95,
+        verbose=2
+):
+    """
+        Predict with uncertainty estimates via Monte Carlo Dropout
+        - if mc_samples=1 then same as predict()
+    """
+
+    model.eval()
+    all_preds = []
+
+    loop = tqdm(loader, desc="[Test]", leave=True) if verbose > 1 else loader
+
+    for X_batch, _ in loop:
+        X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
+
+        # Collect MC samples
+        preds = []
+        for _ in range(mc_samples):
+            # Enable dropout at inference time
+            model.train()
+            with torch.no_grad():
+                outputs = model(X_batch)
+                preds.append(outputs.cpu().numpy())
+
+        preds = np.stack(preds)  # shape: [mc_samples, batch_size, n_targets]
+
+        mean_batch = preds.mean(axis=0)
+        std_batch = preds.std(axis=0)
+
+        all_preds.append((mean_batch, std_batch))
+
+    # Concatenate all batches
+    mean_preds = np.concatenate([m for m, _ in all_preds], axis=0)
+    std_preds = np.concatenate([s for _, s in all_preds], axis=0)
+
+    # Inverse transform if scaler provided
+    if y_scaler is not None:
+        mean_preds = y_scaler.inverse_transform(mean_preds)
+        std_preds = std_preds * y_scaler.scale_
+    #
+    # # Compute confidence intervals
+    # z = 1.96 if ci_level == 0.95 else 1.0
+    # ci_lower = mean_preds - z * std_preds
+    # ci_upper = mean_preds + z * std_preds
+    # ci = np.stack([ci_lower, ci_upper], axis=-1)
+
+    return mean_preds, std_preds

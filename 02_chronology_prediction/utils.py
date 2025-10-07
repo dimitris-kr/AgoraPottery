@@ -1,4 +1,5 @@
 import json
+import re
 
 import pandas as pd
 import numpy as np
@@ -6,6 +7,8 @@ from IPython.core.display_functions import display
 from lightgbm import LGBMRegressor
 from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec
+
+plt.style.use('seaborn-v0_8')
 import seaborn as sns
 import os
 import time
@@ -164,6 +167,7 @@ def load_best_params(path):
             } for model, param_dict in best_params.items()
         }
 
+
 def load_tuning_history(path):
     # Initialize if not exists
     if not os.path.exists(path):
@@ -173,6 +177,7 @@ def load_tuning_history(path):
     tuning_histories = {model_ft: model_ft_history.drop(columns='model_feature_type')
                         for model_ft, model_ft_history in tuning_histories.groupby('model_feature_type')}
     return tuning_histories
+
 
 # SAVE BEST PARAMS
 
@@ -1045,13 +1050,23 @@ def predict_multimodel(models, X_test, y_test):
 
     return pd.DataFrame(results)
 
+def get_results_table(y_true, y_pred, y_std):
+    z = 1.96
+    return pd.DataFrame({
+        "y_true": y_true,
+        "y_pred": y_pred,
+        "y_std": y_std,
+        "CI_lower": y_pred - z * y_std,
+        "CI_upper": y_pred + z * y_std,
+        "error": np.abs(y_pred - y_true)
+    })
 
 # Regression Display and Plot Prediction Results
 
 def get_result_subsets(results, samples):
     results_rand = results.sample(n=samples, random_state=42)
     results_best = results.nsmallest(samples, "error").sort_values(by="error", ascending=True)
-    results_worst = results.nlargest(samples, "error").sort_values(by="y_true", ascending=False)
+    results_worst = results.nlargest(samples, "error").sort_values(by="error", ascending=False)
 
     results_rand.insert(0, "SAMPLE", "RANDOM")
     results_best.insert(0, "SAMPLE", "BEST")
@@ -1172,7 +1187,6 @@ def plot_history(history, target_names):
     epochs = range(1, len(history["train_loss"]) + 1)
 
     # Define grid
-    plt.style.use('seaborn-v0_8')
     ncols = 2
     nrows = n_targets + 1
     fig = plt.figure(figsize=(12, nrows * 5))
@@ -1235,17 +1249,11 @@ def plot_history(history, target_names):
     plt.tight_layout()
     plt.show()
 
-import re
-import numpy as np
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-
 
 def plot_tuning_heatmap(
         df,
         param_grid,
-        loss_range=(0,1),
+        loss_range=(0, 1),
         value_col="val_loss",
         cmap="RdYlGn_r",
         figsize=(11, 9),
@@ -1370,6 +1378,7 @@ def print_tuning_top_results(df, topN=5, top_by=None):
             print(f"\nTop {topN} by {metric_col}:")
             display(df.sort_values(metric_col, ascending=asc).head(topN))
 
+
 def plot_param_loss_corr(df, param_grid):
     df_encoded = df.copy()
 
@@ -1391,4 +1400,98 @@ def plot_param_loss_corr(df, param_grid):
         vmax=1,
     )
     plt.title("Correlation of Parameters with Validation Loss")
+    plt.show()
+
+
+def plot_mlp_comparison(model_results, feature_colors, target_names):
+    n_targets = len(target_names)
+
+    rows = []
+    for ft, result in model_results.items():
+        for key, val in result.items():
+            if "loss" in key:
+                rows.append({
+                    "feature_type": ft,
+                    "target": np.nan,
+                    "metric": key,
+                    "score": val
+                })
+            elif key == "scores":
+                for metric, score_per_target in val.items():
+                    for t, score in enumerate(score_per_target):
+                        rows.append({
+                            "feature_type": ft,
+                            "target": target_names[t] if t < len(target_names) else t,
+                            "metric": metric,
+                            "score": score
+                        })
+    df = pd.DataFrame(rows)
+
+    # Define grid
+    ncols = 2
+    nrows = n_targets + 1
+    fig = plt.figure(figsize=(12, nrows * 4))
+    gs = gridspec.GridSpec(nrows, ncols, figure=fig)
+
+    # First row: Val Loss (colspan=2)
+    df_curr = df.loc[df["metric"] == "val_loss"]
+    ax = fig.add_subplot(gs[0, :])
+    ax_sub = sns.barplot(
+        data=df_curr,
+        x="score",
+        y="metric",
+        hue="feature_type",
+        palette=feature_colors,
+        errorbar=None
+    )
+    ax.set_title("Validation Loss (Lower is Better)")
+    # ax.set_xlabel("Loss Value")
+    # ax.set_ylim([0, max(history["train_loss"] + history["val_loss"]) * 1.05])
+    ax.legend()
+    # for i, v in enumerate(df_curr["score"]):
+    #     ax.text(v + 0.01, i, f"{v:.3f}", va="center")
+    ax.set_xlim(0, 1.1)
+    for container in ax_sub.containers:
+        ax_sub.bar_label(container, fmt="%.3f", label_type="edge", padding=3, fontsize=10, weight="bold")
+
+    df = df.dropna(subset=['target'])
+    metrics = set(df["metric"].unique())
+    if metrics.issubset(metrics_r.keys()):
+        subplots = subplots_r
+    elif metrics.issubset(metrics_c.keys()):
+        subplots = subplots_c
+    else:
+        plt.tight_layout()
+        plt.show()
+        return
+
+    for t in range(n_targets):
+        df_target = df.loc[df["target"] == target_names[t]]
+        for idx, subplot in enumerate(subplots):
+            ax = fig.add_subplot(gs[t + 1, idx] if len(subplots) > 1 else gs[t + 1, :])  # place in grid
+            df_target_metrics = df_target.loc[df_target["metric"].isin(subplot["metrics"])]
+            ax_sub = sns.barplot(
+                data=df_target_metrics,
+                x="score",
+                y="metric",
+                hue="feature_type",
+                palette=feature_colors,
+                errorbar=None
+            )
+
+            for container in ax_sub.containers:
+                ax_sub.bar_label(container, fmt="%.3f", label_type="edge", padding=3, fontsize=10, weight="bold")
+
+            ax.get_legend().remove()
+            if t == 0:
+                ax.set_xlabel("")
+            if idx == 0:
+                ax.set_title(f"{target_names[t]} – Validation Scores")
+            else:
+                ax.set_ylabel("")
+
+            if "ylim" in subplot:
+                ax.set_xlim(min(0, df_target_metrics["score"].min()), subplot["ylim"])
+
+    plt.tight_layout()
     plt.show()
