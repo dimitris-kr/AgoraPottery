@@ -268,7 +268,7 @@ def report_final_model(history, stop, epochs, verbose):
     else:
         print("** Finished  ", end=" | ")
     print(f"ran: {str(len(history["train_loss"])).zfill(len(str(epochs)))}/{epochs} epochs", end=" | ")
-    print(f"final: epoch {str(epoch_idx).zfill(len(str(epochs)))}", end=" | ")
+    print(f"final: epoch {str(history["best_epoch"]).zfill(len(str(epochs)))}", end=" | ")
 
     for key, values in history.items():
         if key == "scores":
@@ -424,8 +424,8 @@ def tune(param_grid,
     start_time = time.time()
     combo_count = len(ParameterGrid(param_grid))
 
-    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(y_dim)],
-                                         combo_count)
+    log_metrics_per_target = [f"{metric}_{t}" for metric in log_metrics for t in range(train_loader.dataset.__dim__()[1])]
+    column_widths = get_column_widths_nn(param_grid, log_metrics_per_target, combo_count)
     print_row_header(column_widths)
 
     tuning_result = {

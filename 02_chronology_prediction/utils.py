@@ -175,7 +175,7 @@ def load_tuning_history(path):
 
     tuning_histories = pd.read_csv(path)
     tuning_histories = {model_ft: model_ft_history.drop(columns='model_feature_type')
-                        for model_ft, model_ft_history in tuning_histories.groupby('model_feature_type')}
+                        for model_ft, model_ft_history in tuning_histories.groupby('model_feature_type', sort=False)}
     return tuning_histories
 
 
@@ -585,7 +585,7 @@ def flatten_scores_by_target(scores):
 
 def print_best_params_nn(best_params, param_grid, y_dim, log_metrics):
     print(f"Execution Time: {fmt_time(best_params["time"])}")
-    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(y_dim)])
+    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(len(best_params["scores"][metric]))])
     print_row_header(column_widths)
     tuning_result_log = {
         "combo_idx": "BEST",
@@ -1483,7 +1483,7 @@ def plot_mlp_comparison(model_results, feature_colors, target_names):
                 ax_sub.bar_label(container, fmt="%.3f", label_type="edge", padding=3, fontsize=10, weight="bold")
 
             ax.get_legend().remove()
-            if t == 0:
+            if t < n_targets - 1:
                 ax.set_xlabel("")
             if idx == 0:
                 ax.set_title(f"{target_names[t]} – Validation Scores")
@@ -1495,3 +1495,6 @@ def plot_mlp_comparison(model_results, feature_colors, target_names):
 
     plt.tight_layout()
     plt.show()
+
+def get_model_path(dir, ft):
+    return os.path.join(dir, f"pottery_chronology_predictor_{ft}.pt")
