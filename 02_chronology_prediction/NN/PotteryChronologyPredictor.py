@@ -563,7 +563,6 @@ def predict_mc(
         loader,
         y_scaler=None,
         mc_samples=1,
-        ci_level=0.95,
         verbose=2
 ):
     """
@@ -603,11 +602,5 @@ def predict_mc(
     if y_scaler is not None:
         mean_preds = y_scaler.inverse_transform(mean_preds)
         std_preds = std_preds * y_scaler.scale_
-    #
-    # # Compute confidence intervals
-    # z = 1.96 if ci_level == 0.95 else 1.0
-    # ci_lower = mean_preds - z * std_preds
-    # ci_upper = mean_preds + z * std_preds
-    # ci = np.stack([ci_lower, ci_upper], axis=-1)
 
     return mean_preds, std_preds
