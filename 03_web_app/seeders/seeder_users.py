@@ -1,11 +1,8 @@
-from database import SessionLocal, engine, Base
 from models.User import User
 from services import hash_password
 
-def seed_users():
+def seed_users(db):
     """Creates an admin user if not already existing."""
-    Base.metadata.create_all(bind=engine)
-    db = SessionLocal()
 
     fields = {
         "username": "admin",
@@ -16,7 +13,6 @@ def seed_users():
     existing_user = db.query(User).filter(User.username == fields["username"]).first()
     if existing_user:
         print(f"User '{fields["username"]}' already exists.")
-        db.close()
         return
 
     # Hash password
@@ -29,6 +25,5 @@ def seed_users():
     # Insert to DB
     db.add(user)
     db.commit()
-    db.close()
 
     print(f"✅ Superuser '{fields["username"]}' created successfully!")

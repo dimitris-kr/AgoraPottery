@@ -29,3 +29,6 @@ alembic upgrade head
 
 list environment dependencies:
 conda env export --no-builds > environment.yml
+
+Run fastapi:
+uvicorn main:app --reload
