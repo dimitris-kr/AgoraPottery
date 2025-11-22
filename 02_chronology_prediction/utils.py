@@ -928,6 +928,93 @@ def plot_confusion_matrix(cm, le, model_name, features):
     plt.tight_layout()
     plt.show()
 
+def plot_confusion_matrix_dual_cmap(cm, le, model_name, features):
+    import numpy as np
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+
+    cm_norm = cm.astype("float") / cm.sum(axis=1, keepdims=True)
+    cm_norm = np.nan_to_num(cm_norm)  # prevent NaN rows
+
+    true_counts = cm.sum(axis=1)
+    true_labels = [f"{label}\n({count} samples)" for label, count in zip(le.classes_, true_counts)]
+    predicted_labels = le.classes_
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    # --- masks ---
+    diag_mask = np.ones_like(cm_norm, dtype=bool)
+    np.fill_diagonal(diag_mask, False)     # diagonal is False (meaning: visible on GREEN)
+    offdiag_mask = ~diag_mask              # everything except diagonal
+
+    # --- 1. green diagonal heatmap ---
+    green_hm = sns.heatmap(
+        cm_norm,
+        mask=diag_mask,          # show ONLY the diagonal
+        annot=False,
+        cmap="Greens",
+        cbar=True,
+        ax=ax,
+        xticklabels=predicted_labels,
+        yticklabels=true_labels,
+        linewidths=0.5,
+        linecolor='white',
+        cbar_kws={"label": "Correct"},
+        vmin=0, vmax=1,
+    )
+
+    # --- 2. red off-diagonal heatmap ---
+    red_hm = sns.heatmap(
+        cm_norm,
+        mask=offdiag_mask,       # show ONLY off-diagonal
+        annot=False,
+        cmap="Reds",
+        cbar=True,
+        ax=ax,
+        xticklabels=predicted_labels,
+        yticklabels=true_labels,
+        linewidths=0.5,
+        linecolor='white',
+        cbar_kws={"label": "Error"},
+        vmin=0, vmax=1,
+    )
+
+    # --- Add annotation manually so it's not overwritten ---
+    for i in range(cm_norm.shape[0]):
+        for j in range(cm_norm.shape[1]):
+            color = "white" if cm_norm[i, j] >= 0.5 else "black"
+            ax.text(
+                j + 0.5, i + 0.5,
+                f"{cm_norm[i, j]:.0%}",
+                ha='center', va='center',
+                color=color,
+                # fontsize=10,
+                fontweight="bold" if i == j else "normal"
+            )
+
+    cbar_green = ax.collections[0].colorbar
+    cbar_red = ax.collections[1].colorbar
+
+    ticks = np.arange(0, 1.1, 0.2)
+    for cbar in [cbar_green, cbar_red]:
+        cbar.ax.set_yticks(ticks)
+        cbar.ax.set_yticklabels([f"{int(t * 100)}%" for t in ticks])
+
+    # Fix y label orientation
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+
+    # Move x labels to top
+    ax.xaxis.set_ticks_position('top')
+    ax.xaxis.set_label_position('top')
+
+    plt.title(f"Confusion Matrix | Model: {model_name} | Features: {features.upper()}", pad=20)
+    plt.xlabel("Predicted Label")
+    plt.ylabel("True Label (Count)")
+    plt.tight_layout()
+    plt.show()
+
+
+
 
 def autopct_with_counts(values):
     def inner_autopct(pct):
