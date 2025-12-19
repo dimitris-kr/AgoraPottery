@@ -22,13 +22,17 @@ migrations:
 
 alembic init alembic
 
-alembic revision --autogenerate -m "create initial tables"
+alembic revision --autogenerate -m "create initial tables"  --rev-id 20251130_1232
 
 alembic upgrade head
 
+after alembic downgrade:
+alembic stamp <revision> === “The database structure matches migration f5e246047393 — trust me.”
 
 list environment dependencies:
 conda env export --no-builds > environment.yml
 
 Run fastapi:
 uvicorn main:app --reload
+
+

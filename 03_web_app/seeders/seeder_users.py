@@ -12,7 +12,7 @@ def seed_users(db):
     # Check if exists
     existing_user = db.query(User).filter(User.username == fields["username"]).first()
     if existing_user:
-        print(f"User '{fields["username"]}' already exists.")
+        print(f"❎ users: no additions")
         return
 
     # Hash password
@@ -24,6 +24,5 @@ def seed_users(db):
 
     # Insert to DB
     db.add(user)
-    db.commit()
 
-    print(f"✅ Superuser '{fields["username"]}' created successfully!")
+    print(f"✅ users: adding 1 ")

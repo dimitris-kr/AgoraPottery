@@ -67,7 +67,7 @@ def read_features(path, f_type="vectors"):
     # path = "../data/chronology_prediction/" + f_type + "/"
     path = os.path.abspath(os.path.join(path, f_type))
 
-    subsets = ["train", "test"]
+    subsets = ["train", "val", "test"]
     methods = ["tfidf", "bert", "cannyhog", "resnet", "vit"]
 
     X = {}
@@ -114,6 +114,16 @@ def read_targets(path, targets, f_type="df"):
     else:
         return None
 
+def read_target_tensors(path):
+    subsets = ["train", "val", "test"]
+    y = {}
+    for subset in subsets:
+        filename = f"y_{subset}.pt"
+        file_path = os.path.join(path, filename)
+        if os.path.exists(file_path):
+            y[subset] = torch.load(file_path, weights_only=True)
+            print(f"Loaded y_{subset}")
+    return y
 
 # PRINT INFO
 
@@ -585,7 +595,8 @@ def flatten_scores_by_target(scores):
 
 def print_best_params_nn(best_params, param_grid, y_dim, log_metrics):
     print(f"Execution Time: {fmt_time(best_params["time"])}")
-    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in range(len(best_params["scores"][metric]))])
+    column_widths = get_column_widths_nn(param_grid, [f"{metric}_{t}" for metric in log_metrics for t in
+                                                      range(len(best_params["scores"][metric]))])
     print_row_header(column_widths)
     tuning_result_log = {
         "combo_idx": "BEST",
@@ -716,6 +727,18 @@ def encode_labels(y, target):
         print(f"{encoding} --> {label}")
 
     return y, target_enc, le
+
+
+def encode(y):
+    le = LabelEncoder()
+
+    for subset, _y in y.items():
+        y[subset] = le.fit_transform(_y) if subset == "train" else le.transform(_y)
+
+    for label, encoding in zip(le.classes_, le.transform(le.classes_)):
+        print(f"{encoding} --> {label}")
+
+    return y, le
 
 
 # EVALUATE SCOREBOARD
@@ -928,6 +951,7 @@ def plot_confusion_matrix(cm, le, model_name, features):
     plt.tight_layout()
     plt.show()
 
+
 def plot_confusion_matrix_dual_cmap(cm, le, model_name, features):
     import numpy as np
     import seaborn as sns
@@ -944,13 +968,13 @@ def plot_confusion_matrix_dual_cmap(cm, le, model_name, features):
 
     # --- masks ---
     diag_mask = np.ones_like(cm_norm, dtype=bool)
-    np.fill_diagonal(diag_mask, False)     # diagonal is False (meaning: visible on GREEN)
-    offdiag_mask = ~diag_mask              # everything except diagonal
+    np.fill_diagonal(diag_mask, False)  # diagonal is False (meaning: visible on GREEN)
+    offdiag_mask = ~diag_mask  # everything except diagonal
 
     # --- 1. green diagonal heatmap ---
     green_hm = sns.heatmap(
         cm_norm,
-        mask=diag_mask,          # show ONLY the diagonal
+        mask=diag_mask,  # show ONLY the diagonal
         annot=False,
         cmap="Greens",
         cbar=True,
@@ -966,7 +990,7 @@ def plot_confusion_matrix_dual_cmap(cm, le, model_name, features):
     # --- 2. red off-diagonal heatmap ---
     red_hm = sns.heatmap(
         cm_norm,
-        mask=offdiag_mask,       # show ONLY off-diagonal
+        mask=offdiag_mask,  # show ONLY off-diagonal
         annot=False,
         cmap="Reds",
         cbar=True,
@@ -1012,8 +1036,6 @@ def plot_confusion_matrix_dual_cmap(cm, le, model_name, features):
     plt.ylabel("True Label (Count)")
     plt.tight_layout()
     plt.show()
-
-
 
 
 def autopct_with_counts(values):
@@ -1137,6 +1159,7 @@ def predict_multimodel(models, X_test, y_test):
 
     return pd.DataFrame(results)
 
+
 def get_results_table(y_true, y_pred, y_std):
     z = 1.96
     return pd.DataFrame({
@@ -1147,6 +1170,29 @@ def get_results_table(y_true, y_pred, y_std):
         "CI_upper": y_pred + z * y_std,
         "error": np.abs(y_pred - y_true)
     })
+
+
+def get_chronology(y, col_suffix=""):
+    y = y.round(decimals=0)
+    return pd.DataFrame({
+    f"start_year_{col_suffix}": y[:, 0],
+    f"end_year_{col_suffix}": np.sum(y, axis=1),
+})
+
+def get_chronology_table(y_true, y_pred):
+    chron_pred = get_chronology(y_pred, col_suffix="pred")
+    chron_true = get_chronology(y_true, col_suffix="true")
+
+    chron_table = pd.concat([chron_pred, chron_true], axis=1)
+    chron_table["error"] = (
+        (
+            np.abs(chron_table["start_year_pred"] - chron_table["start_year_true"]) +
+            np.abs(chron_table["end_year_pred"] - chron_table["end_year_true"])
+        ) / 2.0
+    )
+
+    return chron_table
+
 
 # Regression Display and Plot Prediction Results
 
@@ -1199,6 +1245,100 @@ def plot_true_vs_pred(result_tables):
 
     plt.suptitle("Prediction vs True Year with Confidence Interval")
     plt.grid(axis='x', linestyle='--', alpha=0.5)
+    plt.tight_layout()
+    plt.show()
+
+def plot_true_vs_pred_chronology(chron_tables):
+    fig, axes = plt.subplots(
+        nrows=3, ncols=1,
+        figsize=(14, chron_tables[0].shape[0] * 0.40 * 3),
+        gridspec_kw={"height_ratios": [1, 1, 1]}
+    )
+
+    titles = ["Random Samples", "Best Predictions", "Worst Predictions"]
+
+    for idx, (ax, results) in enumerate(zip(axes, chron_tables)):
+        results_sorted = results.sort_values("start_year_true").reset_index(drop=True)
+        samples = len(results_sorted)
+
+        # Alternate row striping
+        for i in range(samples):
+            ax.axhspan(i - 0.5, i + 0.5,
+                       color="#f8f8f8" if i % 2 == 0 else "#cecece",
+                       alpha=0.7, zorder=0)
+
+        # Plot predictions
+        for i, row in results_sorted.iterrows():
+
+            # Small vertical offsets so true/pred don’t overlap
+            off_true = -0.08
+            off_pred = +0.08
+
+            # ========== TRUE RANGE ==========
+            if row["start_year_true"] == row["end_year_true"]:
+                # single year → plot a dot
+                ax.scatter(row["start_year_true"], i + off_true,
+                           color="seagreen", s=30, label="True" if i == 0 else "", alpha=0.6)
+            else:
+                ax.plot(
+                    [row["start_year_true"], row["end_year_true"]],
+                    [i + off_true, i + off_true],
+                    color="seagreen", linewidth=2, alpha=1,
+                    label="True" if i == 0 else ""
+                )
+
+                # Endpoints (true)
+                ax.scatter(
+                    [row["start_year_true"], row["end_year_true"]],
+                    [i + off_true, i + off_true],
+                    color="seagreen",
+                    s=30,
+                    alpha=0.6
+                )
+
+            # ========== PREDICTED RANGE ==========
+            if row["start_year_pred"] == row["end_year_pred"]:
+                ax.scatter(row["start_year_pred"], i + off_pred,
+                           color="royalblue", s=30, label="Predicted" if i == 0 else "", alpha=0.6)
+            else:
+                ax.plot(
+                    [row["start_year_pred"], row["end_year_pred"]],
+                    [i + off_pred, i + off_pred],
+                    color="royalblue", linewidth=2, alpha=1,
+                    label="Predicted" if i == 0 else ""
+                )
+
+                # Endpoints (predicted)
+                ax.scatter(
+                    [row["start_year_pred"], row["end_year_pred"]],
+                    [i + off_pred, i + off_pred],
+                    color="royalblue",
+                    s=30,
+                    alpha=0.6
+                )
+
+            ax.plot(
+                [row["start_year_true"], row["start_year_pred"]],
+                [i + off_true, i + off_pred],
+                color="gray",
+                linestyle="--",
+                linewidth=1,
+                alpha=0.4
+            )
+
+        ax.set_ylim(samples, -1)
+        ax.set_yticks([])
+        ax.set_xlabel("Year")
+        ax.set_title(f"{titles[idx]} ({samples} samples)")
+
+        # Grid only on x-axis
+        ax.grid(axis="x", linestyle="--", alpha=0.5)
+
+        # Legend for first plot only
+        if idx == 0:
+            ax.legend(loc="upper right")
+
+    fig.suptitle("Prediction vs True Chronology", fontsize=16)
     plt.tight_layout()
     plt.show()
 
@@ -1256,16 +1396,17 @@ def get_dimensions(X, y, le=None, verbose=True):
     return X_dimensions, y_dimensions
 
 
-def get_device():
-    print("PyTorch Version:", torch.__version__)
+def get_device(verbose=True):
+    if verbose: print("PyTorch Version:", torch.__version__)
     if torch.cuda.is_available():
-        print("CUDA is available")
-        print("GPU:", torch.cuda.get_device_name(0))
+        if verbose:
+            print("CUDA is available")
+            print("GPU:", torch.cuda.get_device_name(0))
         device = torch.device("cuda")
     else:
-        print("CUDA is not available")
+        if verbose: print("CUDA is not available")
         device = torch.device("cpu")
-    print("Using Device:", device)
+    if verbose: print("Using Device:", device)
     return device
 
 
@@ -1583,5 +1724,8 @@ def plot_mlp_comparison(model_results, feature_colors, target_names):
     plt.tight_layout()
     plt.show()
 
-def get_model_path(dir, ft):
-    return os.path.join(dir, f"pottery_chronology_predictor_{ft}.pt")
+
+def get_model_path(dir, model_name, ft):
+    return os.path.join(dir, f"{model_name}_{ft}.pt")
+
+

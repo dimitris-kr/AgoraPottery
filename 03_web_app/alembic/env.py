@@ -9,7 +9,7 @@ import os
 from dotenv import load_dotenv
 
 from database import Base  # your Base = declarative_base()
-from models import User  # import all model modules
+from models import *  # import all model modules
 
 load_dotenv()
 

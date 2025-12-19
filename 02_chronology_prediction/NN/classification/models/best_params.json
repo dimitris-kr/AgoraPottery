@@ -1,0 +1,299 @@
+{
+  "tfidf": {
+    "val_loss": 0.5015429854393005,
+    "train_loss": 0.7205859422683716,
+    "params": {
+      "activation": "relu",
+      "blocks": 1,
+      "dropout": 0.1,
+      "hidden_size": 1024,
+      "hidden_size_pattern": "constant",
+      "lr": 0.01
+    },
+    "scores": {
+      "accuracy": [
+        0.753926694393158
+      ],
+      "precision": [
+        0.37191474437713623
+      ],
+      "recall": [
+        0.37124383449554443
+      ],
+      "f1": [
+        0.36983805894851685
+      ]
+    },
+    "time": 249.9429054260254
+  },
+  "bert": {
+    "val_loss": 0.642287015914917,
+    "train_loss": 0.6573684811592102,
+    "params": {
+      "activation": "gelu",
+      "blocks": 2,
+      "dropout": 0.2,
+      "hidden_size": 256,
+      "hidden_size_pattern": "decreasing",
+      "lr": 0.005
+    },
+    "scores": {
+      "accuracy": [
+        0.7225130796432495
+      ],
+      "precision": [
+        0.36312785744667053
+      ],
+      "recall": [
+        0.34415024518966675
+      ],
+      "f1": [
+        0.3438599407672882
+      ]
+    },
+    "time": 365.4900538921356
+  },
+  "cannyhog": {
+    "val_loss": 0.7230055332183838,
+    "train_loss": 0.6200571656227112,
+    "params": {
+      "activation": "gelu",
+      "blocks": 1,
+      "dropout": 0.1,
+      "hidden_size": 128,
+      "hidden_size_pattern": "constant",
+      "lr": 0.0005
+    },
+    "scores": {
+      "accuracy": [
+        0.6596858501434326
+      ],
+      "precision": [
+        0.5912933349609375
+      ],
+      "recall": [
+        0.35314038395881653
+      ],
+      "f1": [
+        0.37540003657341003
+      ]
+    },
+    "time": 569.6010100841522
+  },
+  "resnet": {
+    "val_loss": 0.7184608578681946,
+    "train_loss": 0.7359985113143921,
+    "params": {
+      "activation": "gelu",
+      "blocks": 2,
+      "dropout": 0.1,
+      "hidden_size": 256,
+      "hidden_size_pattern": "constant",
+      "lr": 0.005
+    },
+    "scores": {
+      "accuracy": [
+        0.6649214625358582
+      ],
+      "precision": [
+        0.3417539894580841
+      ],
+      "recall": [
+        0.2977832555770874
+      ],
+      "f1": [
+        0.2847718298435211
+      ]
+    },
+    "time": 316.45669078826904
+  },
+  "vit": {
+    "val_loss": 0.6371405720710754,
+    "train_loss": 0.5553191900253296,
+    "params": {
+      "activation": "relu",
+      "blocks": 1,
+      "dropout": 0.1,
+      "hidden_size": 1024,
+      "hidden_size_pattern": "constant",
+      "lr": 0.005
+    },
+    "scores": {
+      "accuracy": [
+        0.6806282997131348
+      ],
+      "precision": [
+        0.5195537209510803
+      ],
+      "recall": [
+        0.42918717861175537
+      ],
+      "f1": [
+        0.44089576601982117
+      ]
+    },
+    "time": 319.7756178379059
+  },
+  "tfidf + cannyhog": {
+    "val_loss": 0.5099127888679504,
+    "train_loss": 0.437908411026001,
+    "params": {
+      "activation": "gelu",
+      "blocks": 2,
+      "dropout": 0.05,
+      "hidden_size": 256,
+      "hidden_size_pattern": "constant",
+      "lr": 0.005
+    },
+    "scores": {
+      "accuracy": [
+        0.7591623067855835
+      ],
+      "precision": [
+        0.5006874799728394
+      ],
+      "recall": [
+        0.4379926025867462
+      ],
+      "f1": [
+        0.4582946300506592
+      ]
+    },
+    "time": 393.7091317176819
+  },
+  "tfidf + resnet": {
+    "val_loss": 0.4973021447658539,
+    "train_loss": 0.47479137778282166,
+    "params": {
+      "activation": "gelu",
+      "blocks": 1,
+      "dropout": 0.1,
+      "hidden_size": 512,
+      "hidden_size_pattern": "decreasing",
+      "lr": 0.005
+    },
+    "scores": {
+      "accuracy": [
+        0.764397919178009
+      ],
+      "precision": [
+        0.46255022287368774
+      ],
+      "recall": [
+        0.4443965554237366
+      ],
+      "f1": [
+        0.45194289088249207
+      ]
+    },
+    "time": 325.65522360801697
+  },
+  "tfidf + vit": {
+    "val_loss": 0.4802238643169403,
+    "train_loss": 0.442574143409729,
+    "params": {
+      "activation": "gelu",
+      "blocks": 2,
+      "dropout": 0.2,
+      "hidden_size": 256,
+      "hidden_size_pattern": "decreasing",
+      "lr": 0.01
+    },
+    "scores": {
+      "accuracy": [
+        0.7801046967506409
+      ],
+      "precision": [
+        0.5525015592575073
+      ],
+      "recall": [
+        0.5097906589508057
+      ],
+      "f1": [
+        0.5277478694915771
+      ]
+    },
+    "time": 316.00187134742737
+  },
+  "bert + cannyhog": {
+    "val_loss": 0.6441365480422974,
+    "train_loss": 0.6635794639587402,
+    "params": {
+      "activation": "relu",
+      "blocks": 2,
+      "dropout": 0.05,
+      "hidden_size": 512,
+      "hidden_size_pattern": "constant",
+      "lr": 0.01
+    },
+    "scores": {
+      "accuracy": [
+        0.7068063020706177
+      ],
+      "precision": [
+        0.35474592447280884
+      ],
+      "recall": [
+        0.33343595266342163
+      ],
+      "f1": [
+        0.33204177021980286
+      ]
+    },
+    "time": 545.4947302341461
+  },
+  "bert + resnet": {
+    "val_loss": 0.629479706287384,
+    "train_loss": 0.546522855758667,
+    "params": {
+      "activation": "gelu",
+      "blocks": 1,
+      "dropout": 0.05,
+      "hidden_size": 256,
+      "hidden_size_pattern": "decreasing",
+      "lr": 0.01
+    },
+    "scores": {
+      "accuracy": [
+        0.7382199168205261
+      ],
+      "precision": [
+        0.36299604177474976
+      ],
+      "recall": [
+        0.35911330580711365
+      ],
+      "f1": [
+        0.3579491674900055
+      ]
+    },
+    "time": 396.6221876144409
+  },
+  "bert + vit": {
+    "val_loss": 0.5837345719337463,
+    "train_loss": 0.549930989742279,
+    "params": {
+      "activation": "relu",
+      "blocks": 2,
+      "dropout": 0.1,
+      "hidden_size": 1024,
+      "hidden_size_pattern": "constant",
+      "lr": 0.005
+    },
+    "scores": {
+      "accuracy": [
+        0.727748692035675
+      ],
+      "precision": [
+        0.3606596887111664
+      ],
+      "recall": [
+        0.3519704341888428
+      ],
+      "f1": [
+        0.3519875407218933
+      ]
+    },
+    "time": 398.87904262542725
+  }
+}
