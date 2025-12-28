@@ -11,6 +11,8 @@ class HistoricalPeriod(Base):
     # FOREIGN KEYS & RELATIONSHIPS
     chronology_labels = relationship("ChronologyLabel", back_populates="historical_period")
 
+    chronology_predictions = relationship("ChronologyPrediction", back_populates="historical_period")
+
     # FIELDS
     name = Column(String, nullable=False, unique=True, index=True)
     limit_lower = Column(Float, nullable=False)

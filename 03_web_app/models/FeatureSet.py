@@ -11,6 +11,8 @@ class FeatureSet(Base):
     # FOREIGN KEYS & RELATIONSHIPS
     pottery_items = relationship("PotteryItemInFeatureSet", back_populates="feature_set")
 
+    models = relationship("ModelUsesFeatureSet", back_populates="feature_set")
+
     # FIELDS
     feature_type = Column(String, nullable=False, unique=True, index=True)
     data_type = Column(String)

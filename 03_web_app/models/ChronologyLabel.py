@@ -21,5 +21,5 @@ class ChronologyLabel(Base, Timestamps):
     end_year = Column(Float, nullable=False)
     midpoint_year = Column(Float, nullable=False)
     year_range = Column(Float, nullable=False)
-    valid = Column(Boolean, default=True, nullable=False)
+
 

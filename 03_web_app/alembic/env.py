@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 from database import Base  # your Base = declarative_base()
 from models import *  # import all model modules
+import models
 
 load_dotenv()
 
