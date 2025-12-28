@@ -1,5 +1,5 @@
 from models import HistoricalPeriod
-from seeders.print_status import print_status
+from seeders.utils import print_status
 
 
 def seed_historical_periods(db):

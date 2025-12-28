@@ -1,5 +1,5 @@
 from models import Task
-from seeders.print_status import print_status
+from seeders.utils import print_status
 
 
 def seed_tasks(db):
