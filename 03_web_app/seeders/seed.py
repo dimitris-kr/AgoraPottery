@@ -1,4 +1,5 @@
 from database import SessionLocal, engine, Base
+from seeders.seeder_chronology_labels import seed_chronology_labels
 from seeders.seeder_users import seed_users
 from seeders.seeder_data_sources import seed_data_sources
 from seeders.seeder_historical_periods import seed_historical_periods
@@ -21,6 +22,7 @@ if __name__ == "__main__":
         seed_targets(db)
 
         seed_pottery_items(db)
+        seed_chronology_labels(db)
 
         db.commit()
         print("✅ Seeding completed successfully!")
