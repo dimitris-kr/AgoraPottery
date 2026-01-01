@@ -8,7 +8,6 @@ from .ModelHasTarget import ModelHasTarget
 from .ModelUsesFeatureSet import ModelUsesFeatureSet
 from .ModelVersion import ModelVersion
 from .PotteryItem import PotteryItem
-from .PotteryItemInFeatureSet import PotteryItemInFeatureSet
 from .PotteryItemInTrainingRun import PotteryItemInTrainingRun
 from .Target import Target
 from .Task import Task
@@ -26,7 +25,6 @@ __all__ = [
     "ModelUsesFeatureSet",
     "ModelVersion",
     "PotteryItem",
-    "PotteryItemInFeatureSet",
     "PotteryItemInTrainingRun",
     "Target",
     "Task",

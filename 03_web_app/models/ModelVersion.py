@@ -19,7 +19,7 @@ class ModelVersion(Base, Timestamps):
     chronology_predictions = relationship("ChronologyPrediction", back_populates="model_version")
 
     # FIELDS
-    hf_commit_hash = Column(String, index=True)
+    version = Column(String, index=True, nullable=False)
     train_sample_size = Column(Integer)
     train_time = Column(Float)
     val_loss = Column(Float)

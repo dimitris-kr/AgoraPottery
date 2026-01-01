@@ -26,34 +26,8 @@ def load_data(path_data):
     if missing:
         raise ValueError(f"Missing columns: {missing}")
 
-    # for col in required_cols:
-    #     df[col] = df[col].replace("", None)
-    #     df[col] = df[col].where(
-    #         df[col].notna(), None
-    #     )
-
     df = df[df["ValidChronology"] == True].copy()
     df.reset_index(drop=True, inplace=True)
 
     return df
 
-def split_dataset(df, train_ratio, val_ratio, random_state):
-    train_df, temp_df = train_test_split(
-        df,
-        test_size=(1 - train_ratio),
-        random_state=random_state,
-        shuffle=True
-    )
-
-    val_df, test_df = train_test_split(
-        temp_df,
-        test_size=(test_ratio := val_ratio / (1 - train_ratio)),
-        random_state=random_state,
-        shuffle=True
-    )
-
-    train_df["split"] = "train"
-    val_df["split"] = "val"
-    test_df["split"] = "test"
-
-    return pd.concat([train_df, val_df, test_df]).reset_index(drop=True)

@@ -9,13 +9,11 @@ class FeatureSet(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     # FOREIGN KEYS & RELATIONSHIPS
-    pottery_items = relationship("PotteryItemInFeatureSet", back_populates="feature_set")
 
     models = relationship("ModelUsesFeatureSet", back_populates="feature_set")
 
     # FIELDS
     feature_type = Column(String, nullable=False, unique=True, index=True)
     data_type = Column(String)
-    hf_repo_id = Column(String, unique=True)
-    path = Column(String)
-
+    hf_repo_id = Column(String, unique=True, nullable=False)
+    current_version = Column(String, nullable=False, default="v1")

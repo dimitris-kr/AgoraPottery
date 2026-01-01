@@ -17,8 +17,6 @@ class PotteryItem(Base, Timestamps):
 
     chronology_prediction = relationship("ChronologyPrediction", back_populates="pottery_item")
 
-    in_feature_sets = relationship("PotteryItemInFeatureSet", back_populates="pottery_item")
-
     in_training_run = relationship("PotteryItemInTrainingRun", back_populates="pottery_item")
 
     # FIELDS
