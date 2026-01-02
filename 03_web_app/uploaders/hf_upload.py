@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 from huggingface_hub import login, upload_folder, upload_file
 
@@ -20,6 +22,7 @@ if __name__ == "__main__":
         )
 
         print("Uploading images finished successfully")
+
     elif upload == "features":
 
         BASE_PATH = "../../data/features2/tensors"
@@ -56,5 +59,20 @@ if __name__ == "__main__":
             )
 
         print("Uploading feature sets finished successfully")
+
+    elif upload == "models":
+        BASE = Path("./ml_models")
+
+        for model_dir in BASE.iterdir():
+            repo_id = f"dimitriskr/{model_dir.name}"
+
+            upload_folder(
+                repo_id=repo_id,
+                folder_path=str(model_dir),
+                repo_type="model"
+            )
+
+            print(f"Uploaded {repo_id}")
+
     else:
         print("No upload")

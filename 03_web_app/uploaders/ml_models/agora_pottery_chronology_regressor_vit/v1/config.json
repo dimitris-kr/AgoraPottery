@@ -1,0 +1,8 @@
+{
+  "activation": "relu",
+  "blocks": 3,
+  "dropout": 0.2,
+  "hidden_size": 512,
+  "hidden_size_pattern": "constant",
+  "lr": 0.005
+}

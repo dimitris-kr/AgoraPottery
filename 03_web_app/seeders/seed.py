@@ -1,6 +1,7 @@
 from database import SessionLocal, engine, Base
 from seeders.seeder_chronology_labels import seed_chronology_labels
 from seeders.seeder_feature_sets import seed_feature_sets
+from seeders.seeder_models import seed_models
 from seeders.seeder_training_runs import seed_training_runs
 from seeders.seeder_users import seed_users
 from seeders.seeder_data_sources import seed_data_sources
@@ -29,6 +30,8 @@ if __name__ == "__main__":
         seed_training_runs(db)
 
         seed_feature_sets(db)
+
+        seed_models(db)
 
         db.commit()
         print("✅ Seeding completed successfully!")

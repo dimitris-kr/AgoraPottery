@@ -22,6 +22,3 @@ class Model(Base):
     # FIELDS
     name = Column(String, nullable=False, unique=True, index=True)
     hf_repo_id = Column(String, nullable=False)
-    model_path = Column(String)
-    config_path = Column(String)
-    metadata_path = Column(String)

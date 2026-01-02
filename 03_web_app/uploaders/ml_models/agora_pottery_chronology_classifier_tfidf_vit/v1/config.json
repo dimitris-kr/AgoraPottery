@@ -1,0 +1,8 @@
+{
+  "activation": "gelu",
+  "blocks": 2,
+  "dropout": 0.2,
+  "hidden_size": 256,
+  "hidden_size_pattern": "decreasing",
+  "lr": 0.01
+}
