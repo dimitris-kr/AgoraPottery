@@ -1,8 +1,10 @@
+import joblib
 from fastapi import HTTPException
 from sqlalchemy import func, distinct
 from sqlalchemy.orm import Session
 
 from models import Model, Task, ModelUsesFeatureSet, FeatureSet, ModelVersion
+from services import download_y_encoder, download_y_scaler
 
 
 def validate_input(text, image):
@@ -86,3 +88,12 @@ def select_model(
         )
 
     return model, model_version
+
+
+def load_target_decoder(repo_id: str, version: str, task: str):
+    if task == "classification":
+        path = download_y_encoder(repo_id, version)
+    else:
+        path = download_y_scaler(repo_id, version)
+
+    return joblib.load(path)

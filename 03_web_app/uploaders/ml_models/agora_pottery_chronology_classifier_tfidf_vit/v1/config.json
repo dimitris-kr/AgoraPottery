@@ -4,5 +4,11 @@
   "dropout": 0.2,
   "hidden_size": 256,
   "hidden_size_pattern": "decreasing",
-  "lr": 0.01
+  "lr": 0.01,
+  "input_sizes": [
+    300,
+    768
+  ],
+  "output_size": 4,
+  "chronology_target": "periods"
 }

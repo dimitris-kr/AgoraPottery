@@ -4,5 +4,10 @@
   "dropout": 0.2,
   "hidden_size": 512,
   "hidden_size_pattern": "constant",
-  "lr": 0.005
+  "lr": 0.005,
+  "input_sizes": [
+    768
+  ],
+  "output_size": 2,
+  "chronology_target": "years"
 }

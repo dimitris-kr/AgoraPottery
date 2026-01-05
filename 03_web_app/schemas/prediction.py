@@ -2,12 +2,15 @@ from typing import Any
 
 from pydantic import BaseModel
 
+from models import Model, ModelVersion
+
 
 class PredictionResponse(BaseModel):
-    model_name: str
+    prediction: Any
+    breakdown: Any
+    model: str
     model_version: str
     feature_types: list[str]
-    features: dict[str, Any]
 
     class Config:
         extra = "forbid"

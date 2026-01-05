@@ -1096,7 +1096,7 @@ def initialize_model(model_class, params):
         return model_class(**params)
     elif model_class == LGBMRegressor:
         model_alphas = {
-            "y_pred": 0.5,
+            "prediction": 0.5,
             "CI_lower": 0.025,
             "CI_upper": 0.975
         }
@@ -1122,15 +1122,15 @@ def predict_with_std(model, X_test, y_test):
 
     results = pd.DataFrame({
         "y_true": y_test,
-        "y_pred": np.mean(all_preds, axis=0),
+        "prediction": np.mean(all_preds, axis=0),
         "y_std": np.std(all_preds, axis=0),
     })
 
     # Assume the prediction errors follow a normal distribution
     # Confidence Interval where prediction has 95% confidence
     z = norm.ppf(0.975)  # ≈ 1.96
-    results["CI_lower"] = results["y_pred"] - z * results["y_std"]
-    results["CI_upper"] = results["y_pred"] + z * results["y_std"]
+    results["CI_lower"] = results["prediction"] - z * results["y_std"]
+    results["CI_upper"] = results["prediction"] + z * results["y_std"]
 
     N = 10
     results[f"confidence_±{N}"] = results["y_std"].apply(
@@ -1138,7 +1138,7 @@ def predict_with_std(model, X_test, y_test):
     )
 
     # Absolute Error
-    results["error"] = (results["y_pred"] - results["y_true"]).abs()
+    results["error"] = (results["prediction"] - results["y_true"]).abs()
 
     return results
 
@@ -1155,7 +1155,7 @@ def predict_multimodel(models, X_test, y_test):
         results[name] = model.predict(X_test)
 
     # Absolute Error
-    results["error"] = (results["y_pred"] - results["y_true"]).abs()
+    results["error"] = (results["prediction"] - results["y_true"]).abs()
 
     return pd.DataFrame(results)
 
@@ -1164,7 +1164,7 @@ def get_results_table(y_true, y_pred, y_std):
     z = 1.96
     return pd.DataFrame({
         "y_true": y_true,
-        "y_pred": y_pred,
+        "prediction": y_pred,
         "y_std": y_std,
         "CI_lower": y_pred - z * y_std,
         "CI_upper": y_pred + z * y_std,
@@ -1233,7 +1233,7 @@ def plot_true_vs_pred(result_tables):
             plt.scatter(row["y_true"], i, color='seagreen', label='True' if i == 0 else "", zorder=3, s=40, alpha=0.5)
 
             # Predicted year dot
-            plt.scatter(row["y_pred"], i, color='royalblue', label='Predicted' if i == 0 else "", zorder=3, s=40,
+            plt.scatter(row["prediction"], i, color='royalblue', label='Predicted' if i == 0 else "", zorder=3, s=40,
                         alpha=0.5)
 
         if idx == 0 or idx == 1: plt.ylabel("Data Entries")

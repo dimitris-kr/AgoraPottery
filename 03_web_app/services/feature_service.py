@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 import joblib
 import torch
 from PIL import Image
@@ -6,7 +8,7 @@ from transformers import ViTImageProcessor, ViTModel
 from models import FeatureSet
 from services import download_tfidf_vectorizer
 
-
+_TFIDF_VECTORIZERS: Dict[str, Any] = {}
 
 def get_tfidf_vectorizer(db):
     fs = (
@@ -15,11 +17,15 @@ def get_tfidf_vectorizer(db):
         .one()
     )
 
-    vectorizer_file = download_tfidf_vectorizer(fs.hf_repo_id, fs.current_version)
+    version = fs.current_version
 
-    tfidf_vectorizer = joblib.load(vectorizer_file)
+    if version not in _TFIDF_VECTORIZERS:
 
-    return tfidf_vectorizer
+        vectorizer_file = download_tfidf_vectorizer(fs.hf_repo_id, version)
+
+        _TFIDF_VECTORIZERS[version] = joblib.load(vectorizer_file)
+
+    return _TFIDF_VECTORIZERS[version]
 
 def extract_tfidf_features(text: str, vectorizer):
     if not text or not text.strip():
