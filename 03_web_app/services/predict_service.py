@@ -1,13 +1,15 @@
-import joblib
 from fastapi import HTTPException
-from sqlalchemy import func, distinct
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from ML import predict_periods_single, predict_years_single
 from models import Model, Task, ModelUsesFeatureSet, FeatureSet, ModelVersion
-from services import download_y_encoder, download_y_scaler
 
 
-def validate_input(text, image):
+def validate_input(task, text, image):
+    if task not in {"classification", "regression"}:
+        raise ValueError(f"Unknown task: {task}")
+
     if not text and not image:
         raise HTTPException(
             status_code=400,
@@ -90,10 +92,33 @@ def select_model(
     return model, model_version
 
 
-def load_target_decoder(repo_id: str, version: str, task: str):
-    if task == "classification":
-        path = download_y_encoder(repo_id, version)
-    else:
-        path = download_y_scaler(repo_id, version)
+def predict_single(task, model, feature_list, decoder):
 
-    return joblib.load(path)
+
+    if task == "classification":
+        y_pred, y_probs = predict_periods_single(model, feature_list, decoder)
+        prediction = y_pred
+        breakdown = {
+            "probabilities": y_probs
+        }
+    else:
+        y_pred, y_std = predict_years_single(model, feature_list, decoder)
+
+        start_year = int(round(y_pred[0], 0))
+        year_range = int(round(y_pred[1], 0))
+
+        end_year = start_year + year_range
+
+        prediction = [start_year, end_year]
+        z = 1.96
+        targets = ["start_year", "year_range"]
+        breakdown = {
+            target: {
+                "prediction": int(round(y_pred[i], 0)),
+                "std": int(round(y_std[i], 0)),
+                "ci_lower": int(round(y_pred[i] - z * y_std[i], 0)),
+                "ci_upper": int(round(y_pred[i] + z * y_std[i], 0)),
+            } for i, target in enumerate(targets)
+        }
+
+    return prediction, breakdown

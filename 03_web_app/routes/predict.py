@@ -1,15 +1,11 @@
 from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File
-from sqlalchemy.orm import Session
-from sympy.stats.rv import probability
-from torch.onnx.symbolic_opset9 import tensor
 
-from ML import predict_periods_single, predict_years_single
 from database import db_dependency
 from schemas import PredictionResponse
 from services import auth_dependency, validate_input, get_feature_types, select_model, load_model, load_target_decoder, \
-    extract_features
+    extract_features, predict_single
 
 router = APIRouter(prefix="", tags=["Prediction"])
 
@@ -24,7 +20,7 @@ async def predict(
         image: Optional[UploadFile] = File(None),
 ):
     # Validation
-    validate_input(text, image)
+    validate_input(task, text, image)
 
     feature_types = get_feature_types(text, image)
 
@@ -37,31 +33,7 @@ async def predict(
 
     decoder = load_target_decoder(db_model.hf_repo_id, db_model_version.version, task)
 
-    if task == "classification":
-        y_pred, y_probs = predict_periods_single(model, feature_list, decoder)
-        prediction = y_pred
-        breakdown = {
-            "probabilities": y_probs
-        }
-    else:
-        y_pred, y_std = predict_years_single(model, feature_list, decoder)
-
-        start_year = int(round(y_pred[0], 0))
-        year_range = int(round(y_pred[1], 0))
-
-        end_year = start_year + year_range
-
-        prediction = [start_year, end_year]
-        z = 1.96
-        targets = ["start_year", "year_range"]
-        breakdown = {
-            target: {
-                "prediction": int(round(y_pred[i], 0)),
-                "std": int(round(y_std[i])),
-                "ci_lower": int(round(y_pred[i] - z * y_std[i])),
-                "ci_upper": int(round(y_pred[i] + z * y_std[i])),
-            } for i, target in enumerate(targets)
-        }
+    prediction, breakdown = predict_single(task, model, feature_list, decoder)
 
     return PredictionResponse(
         prediction=prediction,

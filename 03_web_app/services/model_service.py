@@ -1,13 +1,15 @@
 import json
 
+import joblib
 import torch
 from torch import nn
 
 from ML import PotteryChronologyPredictor
-from services import download_model, download_model_config
+from services import download_model, download_model_config, download_y_encoder, download_y_scaler
 
 _MODELS = {}
 _DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+_DECODERS = {}
 
 activation_funcs = {
     "relu": nn.ReLU,
@@ -49,3 +51,18 @@ def load_model(repo_id: str, version: str):
 
     return model
 
+
+def load_target_decoder(repo_id: str, version: str, task: str):
+    key = f"{repo_id}:{version}:{task}"
+
+    if key in _DECODERS:
+        return _DECODERS[key]
+
+    if task == "classification":
+        path = download_y_encoder(repo_id, version)
+    else:
+        path = download_y_scaler(repo_id, version)
+
+    decoder = joblib.load(path)
+    _DECODERS[key] = decoder
+    return decoder
