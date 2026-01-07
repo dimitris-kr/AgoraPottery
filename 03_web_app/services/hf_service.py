@@ -1,4 +1,11 @@
-from huggingface_hub import hf_hub_download
+import io
+from pathlib import Path
+
+from fastapi import UploadFile
+from huggingface_hub import hf_hub_download, upload_file
+
+from services import generate_image_path, save_tmp_file
+
 
 def download_tfidf_vectorizer(repo_id, version):
     return hf_hub_download(
@@ -34,3 +41,18 @@ def download_y_scaler(repo_id, version):
         filename=f"{version}/y_scaler.pkl",
         repo_type="model"
     )
+
+
+HF_IMAGES_REPO = "dimitriskr/agora_pottery_images"
+
+def upload_prediction_image(image_tmp_path: Path) -> str:
+    path_in_repo = generate_image_path(image_tmp_path.suffix, root="predictions")
+
+    upload_file(
+        path_or_fileobj=image_tmp_path,
+        repo_id=HF_IMAGES_REPO,
+        path_in_repo=path_in_repo,
+        repo_type="dataset",
+    )
+
+    return path_in_repo

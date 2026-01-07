@@ -3,7 +3,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ML import predict_periods_single, predict_years_single
-from models import Model, Task, ModelUsesFeatureSet, FeatureSet, ModelVersion
+from models import Model, Task, ModelUsesFeatureSet, FeatureSet, ModelVersion, ChronologyPrediction, HistoricalPeriod
 
 
 def validate_input(task, text, image):
@@ -122,3 +122,29 @@ def predict_single(task, model, feature_list, decoder):
         }
 
     return prediction, breakdown
+
+def create_prediction_record(db, task, text, image_path, prediction, breakdown, db_model_version):
+    prediction_record = ChronologyPrediction(
+        model_version_id=db_model_version.id,
+        input_text=text,
+        input_image_path=image_path,
+        breakdown=breakdown,
+        status="pending",
+    )
+
+    if task == "classification":
+        period = (
+            db.query(HistoricalPeriod)
+            .filter(HistoricalPeriod.name == prediction)
+            .one()
+        )
+        prediction_record.historical_period_id = period.id
+
+    else:
+        start_year, end_year = prediction
+        prediction_record.start_year = start_year
+        prediction_record.end_year = end_year
+        prediction_record.midpoint_year = (start_year + end_year) / 2
+        prediction_record.year_range = end_year - start_year
+
+    return prediction_record

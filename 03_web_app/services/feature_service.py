@@ -53,10 +53,10 @@ def get_vit_components():
 
     return _VIT_EXTRACTOR, _VIT_MODEL
 
-def extract_vit_features_from_upload(image_file):
+def extract_vit_features_from_upload(image_tmp_path):
     extractor, model = get_vit_components()
 
-    image = Image.open(image_file.file).convert("RGB")
+    image = Image.open(image_tmp_path).convert("RGB")
 
     inputs = extractor(images=image, return_tensors="pt")
     inputs = {k: v.to(_DEVICE) for k, v in inputs.items()}
