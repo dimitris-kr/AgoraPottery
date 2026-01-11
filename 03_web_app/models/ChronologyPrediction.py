@@ -2,8 +2,10 @@ from database import Base
 from sqlalchemy import Column, Integer, Float, String, Text, ForeignKey, Enum, JSON
 from sqlalchemy.orm import relationship
 
+from ._timestamps import Timestamps
 
-class ChronologyPrediction(Base):
+
+class ChronologyPrediction(Base, Timestamps):
     __tablename__ = "chronology_predictions"
 
     # PRIMARY KEY

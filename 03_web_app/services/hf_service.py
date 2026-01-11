@@ -1,8 +1,9 @@
 import io
+import shutil
 from pathlib import Path
 
 from fastapi import UploadFile
-from huggingface_hub import hf_hub_download, upload_file
+from huggingface_hub import hf_hub_download, upload_file, HfApi
 
 from services import generate_image_path, save_tmp_file
 
@@ -56,3 +57,31 @@ def upload_prediction_image(image_tmp_path: Path) -> str:
     )
 
     return path_in_repo
+
+
+def delete_prediction_image(path_in_repo: str | None):
+    if not path_in_repo:
+        return
+
+    api = HfApi()
+    api.delete_file(
+        repo_id=HF_IMAGES_REPO,
+        repo_type="dataset",
+        path_in_repo=path_in_repo,
+        commit_message=f"Delete prediction image {path_in_repo}",
+    )
+
+TMP_DIR = Path("./tmp")
+TMP_DIR.mkdir(exist_ok=True)
+
+def download_image_tmp(hf_path: str) -> Path:
+    local_path = hf_hub_download(
+        repo_id=HF_IMAGES_REPO,
+        filename=hf_path,
+        repo_type="dataset"
+    )
+
+    tmp_path = TMP_DIR / Path(hf_path).name
+    shutil.copy(local_path, tmp_path)
+
+    return tmp_path

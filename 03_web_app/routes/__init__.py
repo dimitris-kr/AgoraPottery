@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from .auth import router as auth_router
-from .predict import router as predict_router
+from .predictions import router as predict_router
 
 router = APIRouter()
 

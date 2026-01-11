@@ -123,13 +123,13 @@ def predict_single(task, model, feature_list, decoder):
 
     return prediction, breakdown
 
-def create_prediction_record(db, task, text, image_path, prediction, breakdown, db_model_version):
+def create_prediction_record(db, task, text, image_path, prediction, breakdown, db_model_version, status="pending"):
     prediction_record = ChronologyPrediction(
         model_version_id=db_model_version.id,
         input_text=text,
         input_image_path=image_path,
         breakdown=breakdown,
-        status="pending",
+        status=status,
     )
 
     if task == "classification":
