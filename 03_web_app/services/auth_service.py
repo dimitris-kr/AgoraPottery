@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 from typing import Annotated
 
@@ -39,10 +39,11 @@ def authenticate_user(db: Session, username: str, password: str):
 
 
 def create_access_token(username: str, user_id: int, expires_delta: timedelta = timedelta(minutes=TOKEN_EXPIRATION)):
+    expire = datetime.now(timezone.utc) + expires_delta
     payload = {
         "sub": username,
         'id': user_id,
-        'exp': datetime.now() + expires_delta,
+        'exp': int(expire.timestamp()),
     }
     encoded_jwt = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
