@@ -1,9 +1,10 @@
 from datetime import datetime
 from typing import Any, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 
 from schemas import ModelVersionSchema, HistoricalPeriodSchema
+from services import hf_image_url
 
 
 class PredictionResponse(BaseModel):
@@ -23,6 +24,14 @@ class ChronologyPredictionSchema(BaseModel):
     # inputs
     input_text: str | None
     input_image_path: str | None
+
+
+    # input_image_url: str | None = None
+
+    @computed_field
+    @property
+    def input_image_url(self) -> str | None:
+        return hf_image_url(self.input_image_path)
 
     # outputs
     historical_period: HistoricalPeriodSchema | None

@@ -46,6 +46,9 @@ def download_y_scaler(repo_id, version):
 
 HF_IMAGES_REPO = "dimitriskr/agora_pottery_images"
 
+HF_DATASET_BASE = "https://huggingface.co/datasets"
+HF_REVISION = "main"
+
 def upload_prediction_image(image_tmp_path: Path) -> str:
     path_in_repo = generate_image_path(image_tmp_path.suffix, root="predictions")
 
@@ -85,3 +88,14 @@ def download_image_tmp(hf_path: str) -> Path:
     shutil.copy(local_path, tmp_path)
 
     return tmp_path
+
+def hf_image_url(path_in_repo: str | None) -> str | None:
+    if not path_in_repo:
+        return None
+
+    return (
+        f"{HF_DATASET_BASE}/"
+        f"{HF_IMAGES_REPO}/resolve/"
+        f"{HF_REVISION}/"
+        f"{path_in_repo}"
+    )

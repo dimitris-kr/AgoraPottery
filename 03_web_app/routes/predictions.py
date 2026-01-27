@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from database import db_dependency
 from models import ChronologyPrediction, HistoricalPeriod, ModelVersion
-from schemas import PredictionResponse, ChronologyPredictionSchema
+from schemas import PredictionResponse, ChronologyPredictionSchema, PaginatedResponse
 from services import auth_dependency, validate_input, get_feature_types, select_model, load_model, load_target_decoder, \
     extract_features, predict_single, upload_prediction_image, create_prediction_record, save_tmp_file, \
     delete_prediction_image
@@ -66,7 +66,7 @@ async def predict(
     return prediction_record
 
 
-@router.get("", response_model=list[ChronologyPredictionSchema])
+@router.get("", response_model=PaginatedResponse[ChronologyPredictionSchema])
 async def get_predictions(
         db: db_dependency,
         user: auth_dependency,
@@ -115,16 +115,22 @@ async def get_predictions(
     if status:
         query = query.filter(ChronologyPrediction.status == status)
 
-    total_count = query.count()
+    total = query.count()
 
-    query = (
+    items = (
         query
         .order_by(ChronologyPrediction.created_at.desc())
         .offset(offset)
         .limit(limit)
+        .all()
     )
 
-    return query.all()
+    return {
+        "items": items,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.get("/{prediction_id}", response_model=ChronologyPredictionSchema)
