@@ -75,6 +75,9 @@ async def get_predictions(
         output_type: Optional[Literal["historical_period", "years"]] = Query(None),
         status: Optional[Literal["pending", "validated"]] = Query(None),
 
+        sort_by: Literal["created_at", "id"] = Query("created_at"),
+        order: Literal["asc", "desc"] = Query("desc"),
+
         limit: int = Query(20, ge=1, le=100),
         offset: int = Query(0, ge=0),
 ):
@@ -117,11 +120,16 @@ async def get_predictions(
 
     total = query.count()
 
+    sort_col = ChronologyPrediction.created_at if sort_by == "created_at" else ChronologyPrediction.id
+    if order == "asc":
+        query = query.order_by(sort_col.asc(), ChronologyPrediction.id.asc())
+    else:
+        query = query.order_by(sort_col.desc(), ChronologyPrediction.id.desc())
+
     items = (
         query
-        .order_by(ChronologyPrediction.created_at.desc())
-        .offset(offset)
         .limit(limit)
+        .offset(offset)
         .all()
     )
 
