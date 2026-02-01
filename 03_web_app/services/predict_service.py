@@ -1,9 +1,12 @@
+from typing import Literal
+
 from fastapi import HTTPException
-from sqlalchemy import func
 from sqlalchemy.orm import Session
+from sqlalchemy import case, func, literal, Float
 
 from ML import predict_periods_single, predict_years_single
-from models import Model, Task, ModelUsesFeatureSet, FeatureSet, ModelVersion, ChronologyPrediction, HistoricalPeriod
+from models import Model, Task, ModelUsesFeatureSet, FeatureSet, ModelVersion, ChronologyPrediction, HistoricalPeriod, \
+    ChronologyLabel
 
 
 def validate_input(task, text, image):
@@ -148,3 +151,123 @@ def create_prediction_record(db, task, text, image_path, prediction, breakdown, 
         prediction_record.year_range = end_year - start_year
 
     return prediction_record
+
+
+# MATCH: Calculated Field
+# Compare true vs predicted chronology
+
+EXACT_OVERLAP = 0.9        # 90% overlap
+CLOSE_OVERLAP = 0.4        # meaningful overlap
+CLOSE_MIDPOINT = 50        # years
+
+def overlap_ratio(a_start, a_end, b_start, b_end):
+    intersection = max(0, min(a_end, b_end) - max(a_start, b_start))
+    union = max(a_end, b_end) - min(a_start, b_start)
+    return intersection / union if union > 0 else 0
+
+def midpoint_distance(a_midpoint, b_midpoint):
+    return abs(a_midpoint - b_midpoint)
+
+def match_regression(pred, true) -> Literal["exact", "close", "none"]:
+    overlap = overlap_ratio(
+        pred.start_year, pred.end_year,
+        true.start_year, true.end_year
+    )
+
+    midpoint_diff = midpoint_distance(
+        pred.midpoint_year,
+        true.midpoint_year
+    )
+
+    if overlap >= EXACT_OVERLAP:
+        return "exact"
+
+    if overlap >= CLOSE_OVERLAP or midpoint_diff <= CLOSE_MIDPOINT:
+        return "close"
+
+    return "none"
+
+# def compute_match(prediction: ChronologyPredictionSchema) -> Literal["exact", "close", "none", "unknown"]:
+#     if not prediction.pottery_item or not prediction.pottery_item.chronology_label:
+#         return "unknown"
+#
+#     true = prediction.pottery_item.chronology_label
+#
+#     if prediction.historical_period_id:
+#         return (
+#             "exact"
+#             if prediction.historical_period_id == true.historical_period_id
+#             else "none"
+#         )
+#
+#     return match_regression(prediction, true)
+
+
+def match_expression():
+    pred = ChronologyPrediction
+    true = ChronologyLabel
+
+    # intersection
+    intersection = func.greatest(
+        0,
+        func.least(pred.end_year, true.end_year)
+        - func.greatest(pred.start_year, true.start_year)
+    )
+
+    # union
+    union = (
+        func.greatest(pred.end_year, true.end_year)
+        - func.least(pred.start_year, true.start_year)
+    )
+
+    overlap_ratio = intersection / func.nullif(union, 0)
+
+    midpoint_diff = func.abs(
+        pred.midpoint_year - true.midpoint_year
+    )
+
+    return case(
+        # ─────────────────────────────
+        # Unknown (no true label)
+        # ─────────────────────────────
+        (
+            true.id.is_(None),
+            literal("unknown"),
+        ),
+
+        # ─────────────────────────────
+        # Classification
+        # ─────────────────────────────
+        (
+            pred.historical_period_id.isnot(None),
+            case(
+                (
+                    pred.historical_period_id == true.historical_period_id,
+                    literal("exact"),
+                ),
+                else_=literal("none"),
+            ),
+        ),
+
+        # ─────────────────────────────
+        # Regression – exact
+        # ─────────────────────────────
+        (
+            overlap_ratio >= EXACT_OVERLAP,
+            literal("exact"),
+        ),
+
+        # ─────────────────────────────
+        # Regression – close
+        # ─────────────────────────────
+        (
+            (overlap_ratio >= CLOSE_OVERLAP)
+            | (midpoint_diff <= CLOSE_MIDPOINT),
+            literal("close"),
+        ),
+
+        # ─────────────────────────────
+        # Default
+        # ─────────────────────────────
+        else_=literal("none"),
+    )

@@ -5,11 +5,11 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 
 from database import db_dependency
-from models import ChronologyPrediction, HistoricalPeriod, ModelVersion
+from models import ChronologyPrediction, HistoricalPeriod, ModelVersion, PotteryItem
 from schemas import PredictionResponse, ChronologyPredictionSchema, PaginatedResponse
 from services import auth_dependency, validate_input, get_feature_types, select_model, load_model, load_target_decoder, \
     extract_features, predict_single, upload_prediction_image, create_prediction_record, save_tmp_file, \
-    delete_prediction_image
+    delete_prediction_image, match_expression
 
 router = APIRouter(prefix="/predictions", tags=["Predictions"])
 
@@ -74,6 +74,7 @@ async def get_predictions(
         input_type: Optional[Literal["text", "image", "text_image"]] = Query(None),
         output_type: Optional[Literal["historical_period", "years"]] = Query(None),
         status: Optional[Literal["pending", "validated"]] = Query(None),
+        match: Optional[Literal["exact", "close", "none", "unknown"]] = Query(None),
 
         sort_by: Literal["created_at", "id"] = Query("created_at"),
         order: Literal["asc", "desc"] = Query("desc"),
@@ -82,9 +83,15 @@ async def get_predictions(
         offset: int = Query(0, ge=0),
 ):
     query = (db.query(ChronologyPrediction)
+    # SQL joins
+    .join(ChronologyPrediction.pottery_item, isouter=True)
+    .join(PotteryItem.chronology_label, isouter=True)
+
+    # Eager loading
     .options(
         joinedload(ChronologyPrediction.model_version).joinedload(ModelVersion.model),
         joinedload(ChronologyPrediction.historical_period),
+        joinedload(ChronologyPrediction.pottery_item).joinedload(PotteryItem.chronology_label),
     ))
 
     if input_type == "text":
@@ -117,6 +124,10 @@ async def get_predictions(
 
     if status:
         query = query.filter(ChronologyPrediction.status == status)
+
+    if match:
+        match_expr = match_expression()
+        query = query.filter(match_expr == match)
 
     total = query.count()
 
