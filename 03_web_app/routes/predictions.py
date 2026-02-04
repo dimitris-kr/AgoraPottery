@@ -163,6 +163,7 @@ async def get_prediction(
                       .options(
             joinedload(ChronologyPrediction.model_version).joinedload(ModelVersion.model),
             joinedload(ChronologyPrediction.historical_period),
+            joinedload(ChronologyPrediction.pottery_item).joinedload(PotteryItem.chronology_label),
         )
                       .filter_by(id=prediction_id)
                       .one())

@@ -13,9 +13,11 @@ class Model(Base):
     task_id = Column(Integer, ForeignKey("tasks.id"))
     task = relationship("Task", back_populates="models")
 
-    targets = relationship("ModelHasTarget", back_populates="model")
+    # targets = relationship("ModelHasTarget", back_populates="model")
+    targets = relationship("Target", secondary="models_have_targets", back_populates="models")
 
-    feature_sets = relationship("ModelUsesFeatureSet", back_populates="model")
+    # feature_sets = relationship("ModelUsesFeatureSet", back_populates="model")
+    feature_sets = relationship("FeatureSet", secondary="models_use_feature_sets", back_populates="models")
 
     model_versions = relationship("ModelVersion", back_populates="model")
 

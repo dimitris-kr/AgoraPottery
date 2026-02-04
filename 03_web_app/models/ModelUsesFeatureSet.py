@@ -12,7 +12,7 @@ class ModelUsesFeatureSet(Base):
 
     # FOREIGN KEYS & RELATIONSHIPS
     model_id = Column(Integer, ForeignKey("models.id"), primary_key=True)
-    model = relationship("Model", back_populates="feature_sets")
+    # model = relationship("Model", back_populates="feature_sets")
 
     feature_set_id = Column(Integer, ForeignKey("feature_sets.id"), primary_key=True)
-    feature_set = relationship("FeatureSet", back_populates="models")
+    # feature_set = relationship("FeatureSet", back_populates="models")

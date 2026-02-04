@@ -11,7 +11,7 @@ class ModelHasTarget(Base):
 
     # FOREIGN KEYS & RELATIONSHIPS
     model_id = Column(Integer, ForeignKey("models.id"), primary_key=True)
-    model = relationship("Model", back_populates="targets")
+    # model = relationship("Model", back_populates="targets")
 
     target_id = Column(Integer, ForeignKey("targets.id"), primary_key=True)
-    target = relationship("Target", back_populates="models")
+    # target = relationship("Target", back_populates="models")

@@ -10,7 +10,8 @@ class FeatureSet(Base):
 
     # FOREIGN KEYS & RELATIONSHIPS
 
-    models = relationship("ModelUsesFeatureSet", back_populates="feature_set")
+    # models = relationship("ModelUsesFeatureSet", back_populates="feature_set")
+    models = relationship("Model", secondary="models_use_feature_sets", back_populates="feature_sets")
 
     # FIELDS
     feature_type = Column(String, nullable=False, unique=True, index=True)
