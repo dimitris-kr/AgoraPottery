@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 class HistoricalPeriodSchema(BaseModel):
@@ -33,6 +35,7 @@ class PotteryItemSchema(BaseModel):
     object_id: str | None
     description: str | None
     image_path: str | None
+    created_at: datetime | None
 
     data_source: DataSourceSchema
     chronology_label: ChronologyLabelSchema | None
