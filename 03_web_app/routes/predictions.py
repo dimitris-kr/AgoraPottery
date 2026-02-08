@@ -5,11 +5,13 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 
 from database import db_dependency
-from models import ChronologyPrediction, HistoricalPeriod, ModelVersion, PotteryItem
-from schemas import PredictionResponse, ChronologyPredictionSchema, PaginatedResponse
+from models import ChronologyPrediction, HistoricalPeriod, ModelVersion, PotteryItem, ChronologyLabel
+from schemas import PredictionResponse, ChronologyPredictionSchema, PaginatedResponse, ConnectPredictionSchema, \
+    PotteryItemCreateFromPredictionSchema
 from services import auth_dependency, validate_input, get_feature_types, select_model, load_model, load_target_decoder, \
     extract_features, predict_single, upload_prediction_image, create_prediction_record, save_tmp_file, \
     delete_prediction_image, match_expression
+from services.data_service import get_data_source, assign_historical_period
 
 router = APIRouter(prefix="/predictions", tags=["Predictions"])
 
@@ -197,3 +199,79 @@ def delete_prediction(
     db.commit()
 
     return None
+
+
+@router.post("/{prediction_id}/feedback/connect", response_model=ChronologyPredictionSchema)
+def connect_prediction_to_item(
+        prediction_id: int,
+        db: db_dependency,
+        user: auth_dependency,
+        payload: ConnectPredictionSchema,
+):
+    prediction = db.get(ChronologyPrediction, prediction_id)
+    if not prediction:
+        raise HTTPException(404, "Prediction not found")
+
+    pottery_item = db.get(PotteryItem, payload.pottery_item_id)
+    if not pottery_item:
+        raise HTTPException(404, "Pottery item not found")
+
+    prediction.pottery_item_id = pottery_item.id
+    prediction.status = "validated"
+
+    db.commit()
+    return prediction
+
+
+@router.post("/{prediction_id}/feedback/create", response_model=ChronologyPredictionSchema)
+def create_item_and_connect_prediction(
+        prediction_id: int,
+        db: db_dependency,
+        user: auth_dependency,
+        payload: PotteryItemCreateFromPredictionSchema,
+):
+    prediction = db.get(ChronologyPrediction, prediction_id)
+    if not prediction:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+
+    if prediction.status == "validated":
+        raise HTTPException(status_code=400, detail="Prediction already validated")
+
+    # 1. Data source
+    data_source = get_data_source(db, "Prediction Upload")
+
+    # 2. Create pottery item
+    item = PotteryItem(
+        object_id=payload.object_id,
+        description=prediction.input_text,
+        image_path=prediction.input_image_path,
+        data_source_id=data_source.id,
+    )
+    db.add(item)
+    db.flush()
+
+    # 3. Assign historical period
+    historical_period = assign_historical_period(
+        db,
+        payload.start_year,
+        payload.end_year,
+    )
+
+    # 4. Create chronology label
+    label = ChronologyLabel(
+        pottery_item_id=item.id,
+        historical_period_id=historical_period.id if historical_period else None,
+        start_year=payload.start_year,
+        end_year=payload.end_year,
+        midpoint_year=(payload.start_year + payload.end_year) / 2,
+        year_range=payload.end_year - payload.start_year,
+    )
+    db.add(label)
+
+    # 5. Connect prediction
+    prediction.pottery_item_id = item.id
+    prediction.status = "validated"
+
+    db.commit()
+
+    return prediction

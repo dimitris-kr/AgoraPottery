@@ -42,3 +42,15 @@ class PotteryItemSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+class PotteryItemSearchSchema(BaseModel):
+    id: int
+    object_id: str
+
+    class Config:
+        from_attributes = True
+
+class PotteryItemCreateFromPredictionSchema(BaseModel):
+    object_id: str | None
+    start_year: float
+    end_year: float
