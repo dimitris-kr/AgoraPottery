@@ -187,22 +187,6 @@ def match_regression(pred, true) -> Literal["exact", "close", "none"]:
 
     return "none"
 
-# def compute_match(prediction: ChronologyPredictionSchema) -> Literal["exact", "close", "none", "unknown"]:
-#     if not prediction.pottery_item or not prediction.pottery_item.chronology_label:
-#         return "unknown"
-#
-#     true = prediction.pottery_item.chronology_label
-#
-#     if prediction.historical_period_id:
-#         return (
-#             "exact"
-#             if prediction.historical_period_id == true.historical_period_id
-#             else "none"
-#         )
-#
-#     return match_regression(prediction, true)
-
-
 def match_expression():
     pred = ChronologyPrediction
     true = ChronologyLabel
@@ -271,3 +255,12 @@ def match_expression():
         # ─────────────────────────────
         else_=literal("none"),
     )
+
+
+def validate_prediction_exists(prediction: ChronologyPrediction | None):
+    if prediction is None:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+
+def validate_prediction_not_validated(prediction: ChronologyPrediction | None):
+    if prediction.status == "validated":
+        raise HTTPException(status_code=400, detail="Prediction already validated")

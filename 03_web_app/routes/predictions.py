@@ -10,8 +10,9 @@ from schemas import PredictionResponse, ChronologyPredictionSchema, PaginatedRes
     PotteryItemCreateFromPredictionSchema
 from services import auth_dependency, validate_input, get_feature_types, select_model, load_model, load_target_decoder, \
     extract_features, predict_single, upload_prediction_image, create_prediction_record, save_tmp_file, \
-    delete_prediction_image, match_expression
-from services.data_service import get_data_source, assign_historical_period
+    delete_prediction_image, match_expression, validate_prediction_exists, validate_prediction_not_validated
+from services.data_service import get_data_source, assign_historical_period, validate_years, validate_unique_object_id, \
+    validate_item_exists
 
 router = APIRouter(prefix="/predictions", tags=["Predictions"])
 
@@ -160,18 +161,19 @@ async def get_prediction(
         db: db_dependency,
         user: auth_dependency,
 ):
-    try:
-        prediction = (db.query(ChronologyPrediction)
-                      .options(
-            joinedload(ChronologyPrediction.model_version).joinedload(ModelVersion.model),
-            joinedload(ChronologyPrediction.historical_period),
-            joinedload(ChronologyPrediction.pottery_item).joinedload(PotteryItem.chronology_label),
-        )
-                      .filter_by(id=prediction_id)
-                      .one())
-        return prediction
-    except NoResultFound:
-        raise HTTPException(status_code=404, detail="Prediction not found")
+    prediction = (db.query(ChronologyPrediction)
+                  .options(
+        joinedload(ChronologyPrediction.model_version).joinedload(ModelVersion.model),
+        joinedload(ChronologyPrediction.historical_period),
+        joinedload(ChronologyPrediction.pottery_item).joinedload(PotteryItem.chronology_label),
+    )
+                  .filter_by(id=prediction_id)
+                  .one_or_none()
+                  )
+
+    validate_prediction_exists(prediction)
+
+    return prediction
 
 
 @router.delete("/{prediction_id}", status_code=204)
@@ -180,19 +182,10 @@ def delete_prediction(
         db: db_dependency,
         user: auth_dependency,
 ):
-    prediction = (
-        db.query(ChronologyPrediction)
-        .filter(ChronologyPrediction.id == prediction_id)
-        .first()
-    )
+    prediction = db.get(ChronologyPrediction, prediction_id)
+    validate_prediction_exists(prediction)
 
-    if not prediction:
-        raise HTTPException(
-            status_code=404,
-            detail="Prediction not found"
-        )
-
-    # Optional: delete image from HF (see below)
+    # Delete image from HF
     delete_prediction_image(prediction.input_image_path)
 
     db.delete(prediction)
@@ -209,12 +202,12 @@ def connect_prediction_to_item(
         payload: ConnectPredictionSchema,
 ):
     prediction = db.get(ChronologyPrediction, prediction_id)
-    if not prediction:
-        raise HTTPException(404, "Prediction not found")
+    validate_prediction_exists(prediction)
+
+    validate_prediction_not_validated(prediction)
 
     pottery_item = db.get(PotteryItem, payload.pottery_item_id)
-    if not pottery_item:
-        raise HTTPException(404, "Pottery item not found")
+    validate_item_exists(pottery_item)
 
     prediction.pottery_item_id = pottery_item.id
     prediction.status = "validated"
@@ -231,11 +224,11 @@ def create_item_and_connect_prediction(
         payload: PotteryItemCreateFromPredictionSchema,
 ):
     prediction = db.get(ChronologyPrediction, prediction_id)
-    if not prediction:
-        raise HTTPException(status_code=404, detail="Prediction not found")
+    validate_prediction_exists(prediction)
 
-    if prediction.status == "validated":
-        raise HTTPException(status_code=400, detail="Prediction already validated")
+    validate_prediction_not_validated(prediction)
+    validate_years(payload.start_year, payload.end_year)
+    validate_unique_object_id(db, payload.object_id, "Do you want to connect to it instead?")
 
     # 1. Data source
     data_source = get_data_source(db, "Prediction Upload")

@@ -1,5 +1,33 @@
-from models import DataSource, HistoricalPeriod
+from fastapi import HTTPException
 
+from models import DataSource, HistoricalPeriod, PotteryItem
+
+def validate_item_exists(item: PotteryItem | None):
+    if item is None:
+        raise HTTPException(status_code=404, detail="Pottery Item not found")
+
+def validate_years(start_year: float, end_year: float):
+    if start_year is None or end_year is None:
+        raise HTTPException(status_code=409, detail="Start year and end year are required")
+
+    if start_year >= end_year:
+        raise HTTPException(status_code=409, detail="Start year must be smaller than end year")
+
+def validate_unique_object_id(db, object_id: str, extra_msg:str = ""):
+    if not object_id:
+        return
+
+    exists = (
+        db.query(PotteryItem)
+        .filter(PotteryItem.object_id == object_id)
+        .first()
+    )
+
+    if exists:
+        raise HTTPException(
+            status_code=409,
+            detail="A pottery item with this object_id already exists. " + extra_msg
+        )
 
 def get_data_source(db, description):
     source = (
