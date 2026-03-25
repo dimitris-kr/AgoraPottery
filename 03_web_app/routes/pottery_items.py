@@ -1,11 +1,12 @@
 from typing import Optional, Literal
 
 from fastapi import APIRouter, Query, HTTPException
+from sqlalchemy import exists, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 
 from database import db_dependency
-from models import PotteryItem, ChronologyLabel, TrainingRun
+from models import PotteryItem, ChronologyLabel, TrainingRun, PotteryItemInTrainingRun
 from schemas import PotteryItemSearchSchema, PotteryItemSchema, PaginatedResponse
 from services import auth_dependency
 from services.data_service import validate_item_exists
@@ -111,8 +112,20 @@ async def get_pottery_items(
         )
 
         if current_run:
+            subquery = (
+                select(1)
+                .where(
+                    (PotteryItemInTrainingRun.pottery_item_id == PotteryItem.id) &
+                    (PotteryItemInTrainingRun.training_run_id == current_run.id) &
+                    (PotteryItemInTrainingRun.split.in_(["train", "val"]))
+                )
+                .correlate(PotteryItem)
+            )
             if in_train_set:
-                pass
+                query = query.filter(exists(subquery))
+            else:
+                query = query.filter(~exists(subquery))
+
 
     total = query.count()
 
