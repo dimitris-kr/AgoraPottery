@@ -45,6 +45,29 @@ async def get_pottery_item(
 
     validate_item_exists(pottery_item)
 
+    current_run = (
+        db.query(TrainingRun)
+        .filter(TrainingRun.is_current == True)
+        .one_or_none()
+    )
+
+    in_train_set = False
+
+    if current_run:
+        subquery = (
+            select(1)
+            .where(
+                (PotteryItemInTrainingRun.pottery_item_id == pottery_item.id) &
+                (PotteryItemInTrainingRun.training_run_id == current_run.id) &
+                (PotteryItemInTrainingRun.split.in_(["train", "val"]))
+            )
+        )
+
+        in_train_set = db.query(exists(subquery)).scalar()
+
+    pottery_item = PotteryItemSchema.model_validate(pottery_item)
+    pottery_item.in_train_set = bool(in_train_set)
+
     return pottery_item
 
 @router.get("", response_model=PaginatedResponse[PotteryItemSchema])
@@ -75,6 +98,7 @@ async def get_pottery_items(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
 ):
+    # Main Query
     query = (
         db.query(PotteryItem)
         # SQL joins (for filtering/sorting)
@@ -89,6 +113,32 @@ async def get_pottery_items(
             joinedload(PotteryItem.data_source),
         )
     )
+
+    # Add Column
+
+    current_run = (
+        db.query(TrainingRun)
+        .filter(TrainingRun.is_current == True)
+        .one_or_none()
+    )
+
+    in_train_subquery = None
+    if current_run:
+        in_train_subquery = (
+            select(1)
+            .where(
+                (PotteryItemInTrainingRun.pottery_item_id == PotteryItem.id) &
+                (PotteryItemInTrainingRun.training_run_id == current_run.id) &
+                (PotteryItemInTrainingRun.split.in_(["train", "val"]))
+            )
+            .correlate(PotteryItem)
+        )
+
+        query = query.add_columns(
+            exists(in_train_subquery).label("in_train_set")
+        )
+
+    # Filters
 
     if historical_period_id:
         query = query.filter(
@@ -105,29 +155,16 @@ async def get_pottery_items(
         query = query.filter(PotteryItem.data_source_id == data_source_id)
 
     if in_train_set is not None:
-        current_run = (
-            db.query(TrainingRun)
-            .filter(TrainingRun.is_current == True)
-            .one_or_none()
-        )
-
-        if current_run:
-            subquery = (
-                select(1)
-                .where(
-                    (PotteryItemInTrainingRun.pottery_item_id == PotteryItem.id) &
-                    (PotteryItemInTrainingRun.training_run_id == current_run.id) &
-                    (PotteryItemInTrainingRun.split.in_(["train", "val"]))
-                )
-                .correlate(PotteryItem)
-            )
-            if in_train_set:
-                query = query.filter(exists(subquery))
+        if in_train_subquery is not None:
+            if in_train_set :
+                query = query.filter(exists(in_train_subquery))
             else:
-                query = query.filter(~exists(subquery))
+                query = query.filter(~exists(in_train_subquery))
 
-
+    # Total Count
     total = query.count()
+
+    # Sort
 
     sort_map = {
         "created_at": PotteryItem.created_at,
@@ -145,6 +182,7 @@ async def get_pottery_items(
     else:
         query = query.order_by(sort_col.desc(), PotteryItem.id.desc())
 
+    # Results
     items = (
         query
         .limit(limit)
@@ -152,8 +190,14 @@ async def get_pottery_items(
         .all()
     )
 
+    result = []
+    for item, in_train_set in items:
+        obj = PotteryItemSchema.model_validate(item)
+        obj.in_train_set = in_train_set
+        result.append(obj)
+
     return {
-        "items": items,
+        "items": result,
         "total": total,
         "limit": limit,
         "offset": offset,

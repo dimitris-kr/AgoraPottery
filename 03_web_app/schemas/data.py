@@ -40,6 +40,8 @@ class PotteryItemSchema(BaseModel):
     data_source: DataSourceSchema
     chronology_label: ChronologyLabelSchema | None
 
+    in_train_set: bool | None = None
+
     class Config:
         from_attributes = True
 
