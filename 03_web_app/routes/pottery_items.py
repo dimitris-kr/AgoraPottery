@@ -1,8 +1,7 @@
 from typing import Optional, Literal
 
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query
 from sqlalchemy import exists, select
-from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload
 
 from database import db_dependency

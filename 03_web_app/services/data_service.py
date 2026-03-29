@@ -1,6 +1,8 @@
 from fastapi import HTTPException
+from sqlalchemy import select, exists
 
-from models import DataSource, HistoricalPeriod, PotteryItem
+from models import DataSource, HistoricalPeriod, PotteryItem, ChronologyLabel
+
 
 def validate_item_exists(item: PotteryItem | None):
     if item is None:
@@ -74,3 +76,18 @@ def assign_historical_period(
                 best_period = p
 
     return best_period
+
+def apply_non_empty_periods_filter(query):
+    return query.filter(
+        exists().where(
+            (ChronologyLabel.historical_period_id == HistoricalPeriod.id) &
+            (PotteryItem.id == ChronologyLabel.pottery_item_id)
+        )
+    )
+
+def apply_non_empty_sources_filter(query):
+    return query.filter(
+        exists().where(
+            (PotteryItem.data_source_id == DataSource.id)
+        )
+    )
