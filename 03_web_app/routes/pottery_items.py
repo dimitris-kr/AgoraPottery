@@ -1,12 +1,12 @@
 from typing import Optional, Literal
 
 from fastapi import APIRouter, Query
-from sqlalchemy import exists, select
+from sqlalchemy import exists, select, func
 from sqlalchemy.orm import joinedload
 
 from database import db_dependency
 from models import PotteryItem, ChronologyLabel, TrainingRun, PotteryItemInTrainingRun
-from schemas import PotteryItemSearchSchema, PotteryItemSchema, PaginatedResponse
+from schemas import PotteryItemSearchSchema, PotteryItemSchema, PaginatedResponse, YearRangeSchema
 from services import auth_dependency
 from services.data_service import validate_item_exists
 
@@ -28,6 +28,24 @@ def search_pottery_items(
         .all()
     )
 
+@router.get("/year-range", response_model=YearRangeSchema)
+def get_year_range(
+        db: db_dependency,
+        user: auth_dependency,
+):
+    result = (
+        db.query(
+            func.min(ChronologyLabel.start_year),
+            func.max(ChronologyLabel.end_year)
+        )
+        .join(PotteryItem, PotteryItem.id == ChronologyLabel.pottery_item_id)
+        .one()
+    )
+
+    return {
+        "min_start_year": result[0],
+        "max_end_year": result[1],
+    }
 
 @router.get("/{pottery_item_id}", response_model=PotteryItemSchema)
 async def get_pottery_item(
@@ -69,33 +87,34 @@ async def get_pottery_item(
 
     return pottery_item
 
+
 @router.get("", response_model=PaginatedResponse[PotteryItemSchema])
 async def get_pottery_items(
-    db: db_dependency,
-    user: auth_dependency,
+        db: db_dependency,
+        user: auth_dependency,
 
-    # Filters
-    historical_period_id: Optional[int] = Query(None),
-    start_year: Optional[float] = Query(None),
-    end_year: Optional[float] = Query(None),
-    data_source_id: Optional[int] = Query(None),
-    in_train_set: Optional[bool] = Query(None),
+        # Filters
+        historical_period_id: Optional[int] = Query(None),
+        start_year: Optional[float] = Query(None),
+        end_year: Optional[float] = Query(None),
+        data_source_id: Optional[int] = Query(None),
+        in_train_set: Optional[bool] = Query(None),
 
-    # Sorting
-    sort_by: Literal[
-        "created_at",
-        "id",
-        "object_id",
-        "description",
-        "start_year",
-        "end_year"
-    ] = Query("created_at"),
+        # Sorting
+        sort_by: Literal[
+            "created_at",
+            "id",
+            "object_id",
+            "description",
+            "start_year",
+            "end_year"
+        ] = Query("created_at"),
 
-    order: Literal["asc", "desc"] = Query("desc"),
+        order: Literal["asc", "desc"] = Query("desc"),
 
-    # Pagination
-    limit: int = Query(20, ge=1, le=100),
-    offset: int = Query(0, ge=0),
+        # Pagination
+        limit: int = Query(20, ge=1, le=100),
+        offset: int = Query(0, ge=0),
 ):
     # Main Query
     query = (
@@ -108,7 +127,7 @@ async def get_pottery_items(
         # Eager loading (for response)
         .options(
             joinedload(PotteryItem.chronology_label)
-                .joinedload(ChronologyLabel.historical_period),
+            .joinedload(ChronologyLabel.historical_period),
             joinedload(PotteryItem.data_source),
         )
     )
@@ -155,7 +174,7 @@ async def get_pottery_items(
 
     if in_train_set is not None:
         if in_train_subquery is not None:
-            if in_train_set :
+            if in_train_set:
                 query = query.filter(exists(in_train_subquery))
             else:
                 query = query.filter(~exists(in_train_subquery))

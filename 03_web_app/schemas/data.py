@@ -56,3 +56,7 @@ class PotteryItemCreateFromPredictionSchema(BaseModel):
     object_id: str | None
     start_year: float
     end_year: float
+
+class YearRangeSchema(BaseModel):
+    min_start_year: float | None
+    max_end_year: float | None
