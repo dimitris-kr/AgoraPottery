@@ -78,6 +78,7 @@ async def get_predictions(
         output_type: Optional[Literal["historical_period", "years"]] = Query(None),
         status: Optional[Literal["pending", "validated"]] = Query(None),
         match: Optional[Literal["exact", "close", "none", "unknown"]] = Query(None),
+        pottery_item_id: Optional[int] = Query(None),
 
         sort_by: Literal["created_at", "id"] = Query("created_at"),
         order: Literal["asc", "desc"] = Query("desc"),
@@ -131,6 +132,11 @@ async def get_predictions(
     if match:
         match_expr = match_expression()
         query = query.filter(match_expr == match)
+
+    if pottery_item_id:
+        query = query.filter(
+            ChronologyPrediction.pottery_item_id == pottery_item_id
+        )
 
     total = query.count()
 
