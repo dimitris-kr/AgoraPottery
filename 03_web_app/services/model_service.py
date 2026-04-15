@@ -2,9 +2,11 @@ import json
 
 import joblib
 import torch
+from fastapi import HTTPException
 from torch import nn
 
 from ML import PotteryChronologyPredictor
+from models import Model
 from services import download_model, download_model_config, download_y_encoder, download_y_scaler
 
 _MODELS = {}
@@ -66,3 +68,7 @@ def load_target_decoder(repo_id: str, version: str, task: str):
     decoder = joblib.load(path)
     _DECODERS[key] = decoder
     return decoder
+
+def validate_model_exists(model: Model | None):
+    if model is None:
+        raise HTTPException(status_code=404, detail="Model not found")

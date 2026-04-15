@@ -54,6 +54,7 @@ class ModelVersionSchema(BaseModel):
     val_loss: float | None
     val_accuracy: float | None
     val_mae: float | None
+    is_current: bool | None
     created_at: datetime
 
     class Config:
