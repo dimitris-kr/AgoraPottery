@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List
+from typing import List, Literal
 
 from pydantic import BaseModel, computed_field, Field
 
@@ -12,6 +12,7 @@ class TaskSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
 
 class TargetSchema(BaseModel):
     id: int
@@ -31,6 +32,7 @@ class FeatureSetSchema(BaseModel):
     class Config:
         from_attributes = True
         orm_mode = True
+
 
 class ModelSchema(BaseModel):
     id: int
@@ -59,3 +61,13 @@ class ModelVersionSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class MetricScoreSchema(BaseModel):
+    metric: str
+    value: float
+
+
+class TargetScoresSchema(BaseModel):
+    target: Literal["historical_period", "start_year", "year_range"]
+    scores: list[MetricScoreSchema]

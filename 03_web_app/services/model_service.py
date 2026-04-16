@@ -6,8 +6,9 @@ from fastapi import HTTPException
 from torch import nn
 
 from ML import PotteryChronologyPredictor
-from models import Model
-from services import download_model, download_model_config, download_y_encoder, download_y_scaler
+from models import Model, ModelVersion
+from services import download_model, download_model_config, download_y_encoder, download_y_scaler, \
+    download_model_metadata
 
 _MODELS = {}
 _DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -72,3 +73,66 @@ def load_target_decoder(repo_id: str, version: str, task: str):
 def validate_model_exists(model: Model | None):
     if model is None:
         raise HTTPException(status_code=404, detail="Model not found")
+
+def validate_model_version_exists(model_version: ModelVersion | None):
+    if model_version is None:
+        raise HTTPException(status_code=404, detail="Model Version not found")
+
+def load_model_scores(repo_id: str, version: str, task: str):
+    model_metadata = download_model_metadata(repo_id, version)
+
+    with open(model_metadata) as f:
+        metadata = json.load(f)
+
+    return normalize_scores(metadata, task)
+
+
+def normalize_scores(metadata: dict, task: str) -> list[dict]:
+    scores = metadata.get("scores", {})
+
+    result = []
+
+    if task.lower() == "classification":
+        # Single target
+        target_scores = []
+
+        for metric, values in scores.items():
+            target_scores.append({
+                "metric": metric,
+                "value": values[0]
+            })
+
+        result.append({
+            "target": "historical_period",
+            "scores": target_scores
+        })
+
+    elif task.lower() == "regression":
+        # Regression → 2 targets
+        start_year_scores = []
+        year_range_scores = []
+
+        for metric, values in scores.items():
+            if len(values) >= 1:
+                start_year_scores.append({
+                    "metric": metric,
+                    "value": values[0]
+                })
+
+            if len(values) >= 2:
+                year_range_scores.append({
+                    "metric": metric,
+                    "value": values[1]
+                })
+
+        result.append({
+            "target": "start_year",
+            "scores": start_year_scores
+        })
+
+        result.append({
+            "target": "year_range",
+            "scores": year_range_scores
+        })
+
+    return result

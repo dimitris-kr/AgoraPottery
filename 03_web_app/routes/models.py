@@ -5,8 +5,8 @@ from sqlalchemy.orm import joinedload
 
 from database import db_dependency
 from models import ModelVersion, Model
-from schemas import PaginatedResponse, ModelVersionSchema, ModelSchema
-from services import auth_dependency, validate_model_exists
+from schemas import PaginatedResponse, ModelVersionSchema, ModelSchema, TargetScoresSchema
+from services import auth_dependency, validate_model_exists, validate_model_version_exists, load_model_scores
 
 router = APIRouter(prefix="/models", tags=["Models"])
 
@@ -154,3 +154,52 @@ async def get_model(
     validate_model_exists(model)
 
     return model
+
+
+@router.get("/{model_id}/versions", response_model=list[ModelVersionSchema])
+async def get_single_model_versions(
+        db: db_dependency,
+        user: auth_dependency,
+        model_id: int,
+):
+    # Main Query
+    query = (
+        db.query(ModelVersion)
+        .options(
+            joinedload(ModelVersion.model).joinedload(Model.task),
+            joinedload(ModelVersion.model).joinedload(Model.targets),
+            joinedload(ModelVersion.model).joinedload(Model.feature_sets),
+        )
+        .filter_by(model_id=model_id)
+    )
+
+    query = query.order_by(ModelVersion.created_at.asc())
+
+    return query.all()
+
+
+@router.get("/{model_id}/scores", response_model=list[TargetScoresSchema])
+async def get_model_current_version_scores(
+        db: db_dependency,
+        user: auth_dependency,
+        model_id: int,
+):
+    model_version = (
+        db.query(ModelVersion)
+        .options(
+            joinedload(ModelVersion.model).joinedload(Model.task),
+        )
+        .filter(
+            ModelVersion.model_id == model_id,
+            ModelVersion.is_current == True
+        )
+        .one_or_none()
+    )
+
+    validate_model_version_exists(model_version)
+
+    return load_model_scores(
+        model_version.model.hf_repo_id,
+        model_version.version,
+        model_version.model.task.name
+    )

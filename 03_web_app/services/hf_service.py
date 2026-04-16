@@ -29,6 +29,13 @@ def download_model_config(repo_id, version):
         repo_type="model"
     )
 
+def download_model_metadata(repo_id, version):
+    return hf_hub_download(
+        repo_id=repo_id,
+        filename=f"{version}/metadata.json",
+        repo_type="model"
+    )
+
 def download_y_encoder(repo_id, version):
     return hf_hub_download(
         repo_id=repo_id,
