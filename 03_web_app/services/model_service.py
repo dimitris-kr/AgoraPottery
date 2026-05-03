@@ -1,12 +1,14 @@
 import json
+from typing import Optional
 
 import joblib
 import torch
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
 from torch import nn
 
 from ML import PotteryChronologyPredictor
-from models import Model, ModelVersion
+from models import Model, ModelVersion, TrainingRun
 from services import download_model, download_model_config, download_y_encoder, download_y_scaler, \
     download_model_metadata
 
@@ -136,3 +138,10 @@ def normalize_scores(metadata: dict, task: str) -> list[dict]:
         })
 
     return result
+
+def get_current_training_run(db: Session) -> Optional[TrainingRun]:
+    return (
+        db.query(TrainingRun)
+            .filter(TrainingRun.is_current == True)
+            .one_or_none()
+    )

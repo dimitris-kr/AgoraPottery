@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from database import db_dependency
 from models import PotteryItem, ChronologyLabel, TrainingRun, PotteryItemInTrainingRun
 from schemas import PotteryItemSearchSchema, PotteryItemSchema, PaginatedResponse, YearRangeSchema
-from services import auth_dependency
+from services import auth_dependency, get_current_training_run
 from services.data_service import validate_item_exists
 
 router = APIRouter(prefix="/pottery-items", tags=["Pottery Items"])
@@ -62,11 +62,7 @@ async def get_pottery_item(
 
     validate_item_exists(pottery_item)
 
-    current_run = (
-        db.query(TrainingRun)
-        .filter(TrainingRun.is_current == True)
-        .one_or_none()
-    )
+    current_run = get_current_training_run(db)
 
     in_train_set = False
 
@@ -134,11 +130,7 @@ async def get_pottery_items(
 
     # Add Column
 
-    current_run = (
-        db.query(TrainingRun)
-        .filter(TrainingRun.is_current == True)
-        .one_or_none()
-    )
+    current_run = get_current_training_run(db)
 
     in_train_subquery = None
     if current_run:

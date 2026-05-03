@@ -1,11 +1,56 @@
+import time
+
 import numpy as np
-import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torchinfo
-from sklearn.model_selection import ParameterGrid
-from tqdm.std import tqdm
+from torch.utils.data import Dataset, DataLoader
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, accuracy_score, \
+    precision_score, recall_score, f1_score
+
+# CONSTANTS
+
+activation_funcs = {
+    "relu": nn.ReLU,
+    "gelu": nn.GELU,
+}
+
+metrics_r = {
+    "mae": mean_absolute_error,
+    "rmse": mean_squared_error,
+    "r2": r2_score,
+    "medae": median_absolute_error,
+}
+
+metrics_c = {
+    "accuracy": accuracy_score,
+    "precision": precision_score,
+    "recall": recall_score,
+    "f1": f1_score,
+}
+
+metric_params = {metric: {"average": "macro", "zero_division": 0} for metric in ["precision", "recall", "f1"]}
+
+
+# DATASET
+
+class PotteryDataset(Dataset):
+    def __init__(self, X_list, y):
+        """
+        X_list: list of tensors, each [N, d] (can be 1 or more feature sets)
+        y: tensor of targets [N] or [N, t] (t = number of targets)
+        """
+        self.X_list = X_list
+        self.y = y
+
+    def __len__(self):
+        # Return number of samples in dataset
+        return self.y.shape[0]
+
+    def __getitem__(self, idx):
+        # Return one sample (features and target) at position idx
+        return [X[idx] for X in self.X_list], self.y[idx]
 
 
 # MODEL CLASS
@@ -116,7 +161,7 @@ class PotteryChronologyPredictor(nn.Module):
             )
 
 
-# PREDICT
+# PREDICT (INFERENCE)
 
 def predict_periods_single(model, X, y_encoder):
     with torch.no_grad():
@@ -133,11 +178,12 @@ def predict_periods_single(model, X, y_encoder):
 
     return y_pred, y_probs
 
+
 def predict_years_single(
-    model,
-    X,
-    y_scaler=None,
-    mc_samples: int = 50,
+        model,
+        X,
+        y_scaler=None,
+        mc_samples: int = 50,
 ):
     """
     Monte Carlo Dropout regression prediction for ONE item
@@ -167,7 +213,7 @@ def predict_years_single(
 
     # Mean & std over MC samples
     mean_preds = preds.mean(axis=0).squeeze(0)  # (n_targets,)
-    std_preds = preds.std(axis=0).squeeze(0)    # (n_targets,)
+    std_preds = preds.std(axis=0).squeeze(0)  # (n_targets,)
 
     # Inverse scaling if needed
     if y_scaler is not None:
@@ -175,3 +221,180 @@ def predict_years_single(
         std_preds = std_preds * y_scaler.scale_
 
     return mean_preds, std_preds
+
+
+# TRAIN  (production version)
+
+def _train_epoch(model, loader, criterion, optimizer):
+    model.train()
+    losses = []
+    for X_batch, y_batch in loader:
+        X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
+        y_batch = y_batch.to(model.device)
+
+        optimizer.zero_grad()
+
+        # Forward Pass → Predictions
+        outputs = model(X_batch)
+
+        # Calculate Loss
+        loss = criterion(outputs, y_batch)
+
+        # Backpropagation → Calculate Gradients
+        loss.backward()
+
+        # Update Weights
+        optimizer.step()
+
+        # Save batch loss
+        losses += [loss.item()]
+
+    # Calculate Training Mean Loss
+    train_loss = float(np.mean(losses))
+
+    return model, optimizer, train_loss
+
+
+def _validate_epoch(model, loader, criterion, y_scaler=None):
+    model.eval()
+    losses = []
+    y_true_all, y_pred_all = [], []
+    with torch.no_grad():
+        for X_batch, y_batch in loader:
+            X_batch = [_X_batch.to(model.device) for _X_batch in X_batch]
+            y_batch = y_batch.to(model.device)
+
+            # Forward Pass → Predictions
+            outputs = model(X_batch)
+
+            # Calculate Loss
+            loss = criterion(outputs, y_batch)
+
+            # Save batch loss
+            losses += [loss.item()]
+
+            y_true_all += [y_batch]
+            y_pred_all += [outputs]
+
+    # Calculate Validation Mean Loss
+    val_loss = float(np.mean(losses))
+
+    # Concatenate Batches
+    y_true = torch.cat(y_true_all)
+    y_pred = torch.cat(y_pred_all)
+
+    # Classification case -> choose class index with max value
+    if model.chronology_target == "periods":
+        y_pred = y_pred.argmax(dim=1)
+
+    y_true = y_true.cpu().numpy()
+    y_pred = y_pred.cpu().numpy()
+
+    if y_scaler:
+        y_true = y_scaler.inverse_transform(y_true)
+        y_pred = y_scaler.inverse_transform(y_pred)
+
+    return y_true, y_pred, val_loss
+
+
+def _evaluate(y_true, y_pred, metrics):
+    scores = {}
+    if len(y_true.shape) == 1:
+        y_true = y_true.reshape(-1, 1)
+        y_pred = y_pred.reshape(-1, 1)
+
+    for metric, get_metric_score in metrics.items():
+        params = metric_params.get(metric, {})
+        scores[metric] = []
+
+        for d in range(y_true.shape[1]):
+            metric_score = get_metric_score(y_true[:, d], y_pred[:, d], **params)
+
+            if metric == "rmse": metric_score = np.sqrt(metric_score)
+            scores[metric] += [float(metric_score)]
+    return scores
+
+
+def train(
+        model: PotteryChronologyPredictor,
+        train_loader: DataLoader,
+        val_loader: DataLoader,
+        y_scaler=None,  # StandardScaler (regression only)
+        epochs: int = 50,
+        lr: float = 1e-3,
+        weight_decay: float = 1e-6,
+        patience: int = 10,
+):
+    start_time = time.time()
+
+    optimizer = optim.AdamW(
+        model.parameters(),
+        lr=lr,
+        weight_decay=weight_decay
+    )
+
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="min",
+        factor=0.5,
+        patience=2
+    )
+
+    best = {
+        "state": {},
+        "train_loss": float("inf"),
+        "val_loss": float("inf"),
+        "scores": None,
+    }
+
+    patience_counter = 0
+
+    if model.chronology_target == "periods":
+        criterion = nn.CrossEntropyLoss()
+        metrics = metrics_c
+    elif model.chronology_target == "years":
+        criterion = nn.MSELoss()
+        metrics = metrics_r
+    else:
+        return
+
+    for epoch in range(1, epochs + 1):
+        # Training phase
+        model, optimizer, train_loss = _train_epoch(model, train_loader, criterion, optimizer)
+
+        # Validation phase
+        y_true, y_pred, val_loss = _validate_epoch(model, val_loader, criterion, y_scaler)
+
+        # Scheduler
+        # If validation loss stops improving, lower learning rate automatically
+        scheduler.step(val_loss)
+
+        print(f"Epoch {epoch}/{epochs}: train_loss: {train_loss:.4f} | val_loss: {val_loss:.4f}")
+
+        # Early Stopping
+        # If validation loss doesn’t improve for X epochs (patience),
+        # stop training early and restore the best model weights
+        if val_loss < best["val_loss"]:
+            best = {
+                "state": {k: v.clone() for k, v in model.state_dict().items()},
+                "train_loss": train_loss,
+                "val_loss": val_loss,
+                "scores": _evaluate(y_true, y_pred, metrics),
+            }
+            patience_counter = 0
+        else:
+            patience_counter += 1
+            if patience_counter >= patience:
+                print(f"Early stopping at epoch {epoch}")
+                break
+
+    model.load_state_dict(best["state"])
+
+    metadata = {
+        "train_loss": best["train_loss"],
+        "val_loss": best["val_loss"],
+        "scores": best["scores"],
+        "time": time.time() - start_time,
+    }
+
+    return model, metadata

@@ -7,6 +7,7 @@ from .historical_periods import router as historical_periods_router
 from .data_sources import router as data_sources_router
 from .models import router as model_router
 from .tasks import router as task_router
+from .models_retrain import router as models_retrain_router
 router = APIRouter()
 
 # Register all routes
@@ -18,3 +19,4 @@ router.include_router(historical_periods_router)
 router.include_router(data_sources_router)
 router.include_router(model_router)
 router.include_router(task_router)
+router.include_router(models_retrain_router)
