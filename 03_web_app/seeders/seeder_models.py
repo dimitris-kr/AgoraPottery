@@ -1,3 +1,5 @@
+import os
+
 from models import Task, Model, FeatureSet, ModelUsesFeatureSet, ModelVersion, Target, ModelHasTarget, TrainingRun, \
     PotteryItemInTrainingRun
 import json
@@ -6,6 +8,7 @@ from sqlalchemy import and_, func
 
 from seeders.utils import load_metadata_from_hf, get_current_training_run, get_train_sample_size, print_status
 
+HF_USERNAME = os.getenv("HF_USERNAME")
 
 def seed_models(db):
     MODELS = [
@@ -37,7 +40,7 @@ def seed_models(db):
     for name, task_name, feature_types in MODELS:
         task = db.query(Task).filter_by(name=task_name).one()
 
-        hf_repo_id = f"dimitriskr/{name}"
+        hf_repo_id = f"{HF_USERNAME}/{name}"
 
         # ─────────────────────────────
         # Model

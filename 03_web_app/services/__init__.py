@@ -5,3 +5,4 @@ from .feature_service import *
 from .predict_service import *
 from .model_service import *
 from .data_service import *
+from .retrain_service import *

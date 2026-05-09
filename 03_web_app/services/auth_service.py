@@ -1,18 +1,15 @@
-from datetime import datetime, timedelta, timezone
 import os
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from dotenv import load_dotenv
+import bcrypt
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-import bcrypt
 from sqlalchemy.orm import Session
 
 from database import db_dependency
 from models import User
-
-load_dotenv()
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")

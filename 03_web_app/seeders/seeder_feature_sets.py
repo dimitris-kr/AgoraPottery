@@ -1,3 +1,5 @@
+import os
+
 from models import FeatureSet
 from seeders.utils import print_status
 
@@ -7,13 +9,13 @@ def seed_feature_sets(db):
         {
             "feature_type": "tfidf",
             "data_type": "text",
-            "hf_repo_id": "dimitriskr/agora_pottery_tfidf",
+            "hf_repo_id": os.getenv("HF_TFIDF_REPO"),
             "current_version": "v1",
         },
         {
             "feature_type": "vit",
             "data_type": "image",
-            "hf_repo_id": "dimitriskr/agora_pottery_vit",
+            "hf_repo_id": os.getenv("HF_VIT_REPO"),
             "current_version": "v1",
         },
     ]

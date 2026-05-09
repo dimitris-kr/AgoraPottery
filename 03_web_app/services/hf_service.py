@@ -1,11 +1,10 @@
-import io
+import os
 import shutil
 from pathlib import Path
 
-from fastapi import UploadFile
 from huggingface_hub import hf_hub_download, upload_file, HfApi
 
-from services import generate_image_path, save_tmp_file
+from services import generate_image_path
 
 
 def download_tfidf_vectorizer(repo_id, version):
@@ -51,7 +50,7 @@ def download_y_scaler(repo_id, version):
     )
 
 
-HF_IMAGES_REPO = "dimitriskr/agora_pottery_images"
+HF_IMAGE_REPO = os.getenv("HF_IMAGE_REPO")
 
 HF_DATASET_BASE = "https://huggingface.co/datasets"
 HF_REVISION = "main"
@@ -61,7 +60,7 @@ def upload_prediction_image(image_tmp_path: Path) -> str:
 
     upload_file(
         path_or_fileobj=image_tmp_path,
-        repo_id=HF_IMAGES_REPO,
+        repo_id=HF_IMAGE_REPO,
         path_in_repo=path_in_repo,
         repo_type="dataset",
     )
@@ -75,7 +74,7 @@ def delete_prediction_image(path_in_repo: str | None):
 
     api = HfApi()
     api.delete_file(
-        repo_id=HF_IMAGES_REPO,
+        repo_id=HF_IMAGE_REPO,
         repo_type="dataset",
         path_in_repo=path_in_repo,
         commit_message=f"Delete prediction image {path_in_repo}",
@@ -86,7 +85,7 @@ TMP_DIR.mkdir(exist_ok=True)
 
 def download_image_tmp(hf_path: str) -> Path:
     local_path = hf_hub_download(
-        repo_id=HF_IMAGES_REPO,
+        repo_id=HF_IMAGE_REPO,
         filename=hf_path,
         repo_type="dataset"
     )
@@ -102,7 +101,7 @@ def hf_image_url(path_in_repo: str | None) -> str | None:
 
     return (
         f"{HF_DATASET_BASE}/"
-        f"{HF_IMAGES_REPO}/resolve/"
+        f"{HF_IMAGE_REPO}/resolve/"
         f"{HF_REVISION}/"
         f"{path_in_repo}"
     )

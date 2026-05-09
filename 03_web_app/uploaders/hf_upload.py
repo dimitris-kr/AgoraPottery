@@ -15,7 +15,7 @@ if __name__ == "__main__":
     if upload == "images":
         # Push Image Dataset
         upload_folder(
-            repo_id="dimitriskr/agora_pottery_images",
+            repo_id=os.getenv("HF_IMAGE_REPO"),
             folder_path="../../data/images",
             path_in_repo="images",
             repo_type="dataset"
@@ -26,8 +26,8 @@ if __name__ == "__main__":
     elif upload == "features":
 
         BASE_PATH = "../../data/features2/tensors"
-        TFIDF_REPO = "dimitriskr/agora_pottery_tfidf"
-        VIT_REPO = "dimitriskr/agora_pottery_vit"
+        TFIDF_REPO = os.getenv("HF_TFIDF_REPO")
+        VIT_REPO = os.getenv("HF_VIT_REPO")
 
         VERSION = "v1"
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
         BASE = Path("./ml_models")
 
         for model_dir in BASE.iterdir():
-            repo_id = f"dimitriskr/{model_dir.name}"
+            repo_id = f"{os.getenv("HF_USERNAME")}/{model_dir.name}"
 
             upload_folder(
                 repo_id=repo_id,
