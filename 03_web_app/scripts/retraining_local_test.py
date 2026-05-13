@@ -1,8 +1,10 @@
 import os
 
 from dotenv import load_dotenv
+from sklearn.preprocessing import StandardScaler
 
 from database import SessionLocal, engine, Base
+from scripts.prepare_models_for_app import prepare
 from services import get_current_training_run
 from models import (
     PotteryItem,
@@ -14,7 +16,10 @@ from models import (
 from Modal import (
     refit_tfidf_vectorizer,
     extract_tfidf_features,
-    extract_vit_features
+    extract_vit_features,
+    get_regression_targets,
+    refit_y_scaler,
+    scale_y, get_classification_targets, refit_y_encoder, encode_y,
 )
 
 load_dotenv()
@@ -30,6 +35,7 @@ PREV_VERSION = "v1"
 CLF_TFIDF_REPO = "dimitriskr/agora_pottery_chronology_classifier_tfidf"
 
 SUBSETS = ["train", "val"]
+
 
 # ─────────────────────────────────────────────
 # STEP 0 — Load items from DB
@@ -88,6 +94,7 @@ def load_items():
 
     return items
 
+
 def print_info_features(X):
     print("{")
     for subset in X.keys():
@@ -100,6 +107,20 @@ def print_info_features(X):
             print(f"{indent}{type(X[subset][method])}")
             print(f"{indent}shape = {X[subset][method].shape}, ")
         print("\t},")
+    print("}")
+
+def print_info_targets(y):
+    print("{")
+    for subset in y.keys():
+        indent = "\t"
+        print(f"{indent}{subset}: ", end="")
+
+        y_type = type(y[subset])
+        print()
+        indent = 2 * "\t"
+        print(f"{indent}{y_type}")
+        print(f"{indent}shape   = {y[subset].shape}")
+
     print("}")
 
 def extract_features(items):
@@ -118,6 +139,29 @@ def extract_features(items):
 
     print_info_features(X)
 
+
+def prepare_targets(items):
+    print("\n** Step 2: Scaling targets **")
+
+    y = {}
+
+    y["regression"] = {subset: get_regression_targets(items[subset]) for subset in SUBSETS}
+    scaler = refit_y_scaler(y["regression"]["train"])
+    y["regression"] = {subset: scale_y(y["regression"][subset], scaler) for subset in y["regression"].keys()}
+
+    y["classification"] = {subset: get_classification_targets(items[subset]) for subset in SUBSETS}
+    encoder = refit_y_encoder(y["classification"]["train"])
+    y["classification"] = {subset: encode_y(y["classification"][subset], encoder) for subset in y["classification"].keys()}
+
+
+    for task in y.keys():
+        print(task)
+        print_info_targets(y[task])
+        print()
+
+
+
 if __name__ == "__main__":
     items = load_items()
     extract_features(items)
+    prepare_targets(items)

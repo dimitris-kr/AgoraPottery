@@ -1,3 +1,6 @@
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+
+
 def _get_device():
     import torch
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -88,3 +91,38 @@ def extract_vit_features(items: list[dict], hf_images_repo: str, hf_token: str):
 
     return torch.stack(features)
 
+# ──────────────────────────────────────────────
+# TARGET BUILDING
+# ──────────────────────────────────────────────
+
+def get_regression_targets(items: list[dict]):
+    return [[it["start_year"], it["year_range"]] for it in items]
+
+def refit_y_scaler(y_train: list[list[float]]):
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    scaler.fit(y_train)
+    return scaler
+
+def scale_y(y: list[list[float]], scaler: StandardScaler):
+    import torch
+
+    y = scaler.transform(y)
+    y = torch.tensor(y, dtype=torch.float32)
+    return y
+
+def get_classification_targets(items: list[dict]):
+    return [it["historical_period"] for it in items]
+
+def refit_y_encoder(y_train: list[str]):
+    from sklearn.preprocessing import LabelEncoder
+    encoder = LabelEncoder()
+    encoder.fit(y_train)
+    return encoder
+
+def encode_y(y: list[str], encoder: LabelEncoder):
+    import torch
+
+    y = encoder.transform(y)
+    y = torch.tensor(y, dtype=torch.long)
+    return y
