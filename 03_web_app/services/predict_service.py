@@ -168,7 +168,7 @@ def overlap_ratio(a_start, a_end, b_start, b_end):
 def midpoint_distance(a_midpoint, b_midpoint):
     return abs(a_midpoint - b_midpoint)
 
-def match_regression(pred, true) -> Literal["exact", "close", "none"]:
+def match_regression(pred, true) -> Literal["exact", "partial", "none"]:
     overlap = overlap_ratio(
         pred.start_year, pred.end_year,
         true.start_year, true.end_year
@@ -183,7 +183,7 @@ def match_regression(pred, true) -> Literal["exact", "close", "none"]:
         return "exact"
 
     if overlap >= CLOSE_OVERLAP or midpoint_diff <= CLOSE_MIDPOINT:
-        return "close"
+        return "partial"
 
     return "none"
 
@@ -247,7 +247,7 @@ def match_expression():
         (
             (overlap_ratio >= CLOSE_OVERLAP)
             | (midpoint_diff <= CLOSE_MIDPOINT),
-            literal("close"),
+            literal("partial"),
         ),
 
         # ─────────────────────────────

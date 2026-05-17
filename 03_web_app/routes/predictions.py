@@ -77,7 +77,7 @@ async def get_predictions(
         input_type: Optional[Literal["text", "image", "text_image"]] = Query(None),
         output_type: Optional[Literal["historical_period", "years"]] = Query(None),
         status: Optional[Literal["pending", "validated"]] = Query(None),
-        match: Optional[Literal["exact", "close", "none", "unknown"]] = Query(None),
+        match: Optional[Literal["exact", "partial", "none", "unknown"]] = Query(None),
         pottery_item_id: Optional[int] = Query(None),
 
         sort_by: Literal["created_at", "id"] = Query("created_at"),

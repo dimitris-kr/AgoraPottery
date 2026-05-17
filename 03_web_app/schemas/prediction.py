@@ -49,7 +49,7 @@ class ChronologyPredictionSchema(BaseModel):
 
     @computed_field
     @property
-    def match(self) -> Literal["exact", "close", "none", "unknown"]:
+    def match(self) -> Literal["exact", "partial", "none", "unknown"]:
         if not self.pottery_item or not self.pottery_item.chronology_label:
             return "unknown"
 
