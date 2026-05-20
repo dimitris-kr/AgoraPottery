@@ -345,6 +345,7 @@ def train(
         "train_loss": float("inf"),
         "val_loss": float("inf"),
         "scores": None,
+        "epoch": 0,
     }
 
     patience_counter = 0
@@ -380,12 +381,13 @@ def train(
                 "train_loss": train_loss,
                 "val_loss": val_loss,
                 "scores": _evaluate(y_true, y_pred, metrics),
+                "epoch": epoch,
             }
             patience_counter = 0
         else:
             patience_counter += 1
             if patience_counter >= patience:
-                print(f"Early stopping at epoch {epoch}")
+                print(f"Early stopping at epoch {epoch}. Restore best state at epoch {best['epoch']}")
                 break
 
     model.load_state_dict(best["state"])

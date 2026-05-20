@@ -1,10 +1,8 @@
 import os
 
 from dotenv import load_dotenv
-from sklearn.preprocessing import StandardScaler
 
 from database import SessionLocal, engine, Base
-from scripts.prepare_models_for_app import prepare
 from services import get_current_training_run
 from models import (
     PotteryItem,
@@ -19,7 +17,11 @@ from Modal import (
     extract_vit_features,
     get_regression_targets,
     refit_y_scaler,
-    scale_y, get_classification_targets, refit_y_encoder, encode_y,
+    scale_y,
+    get_classification_targets,
+    refit_y_encoder,
+    encode_y,
+    download_config, train_single_model,
 )
 
 load_dotenv()
@@ -125,19 +127,16 @@ def print_info_targets(y):
 
 def extract_features(items):
     print("\n** Step 1: Extracting features **")
-
-    X = {
-        "tfidf": {},
-        "vit": {}
-    }
-
     vectorizer = refit_tfidf_vectorizer(items["train"])
-
-    for subset in SUBSETS:
-        X["tfidf"][subset] = extract_tfidf_features(items[subset], vectorizer)
-        X["vit"][subset] = extract_vit_features(items[subset], HF_IMAGE_REPO, HF_TOKEN)
-
+    X = {
+        subset: {
+            "tfidf": extract_tfidf_features(items[subset], vectorizer),
+            "vit": extract_vit_features(items[subset], HF_IMAGE_REPO, HF_TOKEN)
+        }
+        for subset in SUBSETS
+    }
     print_info_features(X)
+    return X
 
 
 def prepare_targets(items):
@@ -146,12 +145,12 @@ def prepare_targets(items):
     y = {}
 
     y["regression"] = {subset: get_regression_targets(items[subset]) for subset in SUBSETS}
-    scaler = refit_y_scaler(y["regression"]["train"])
-    y["regression"] = {subset: scale_y(y["regression"][subset], scaler) for subset in y["regression"].keys()}
+    y_scaler = refit_y_scaler(y["regression"]["train"])
+    y["regression"] = {subset: scale_y(y["regression"][subset], y_scaler) for subset in y["regression"].keys()}
 
     y["classification"] = {subset: get_classification_targets(items[subset]) for subset in SUBSETS}
-    encoder = refit_y_encoder(y["classification"]["train"])
-    y["classification"] = {subset: encode_y(y["classification"][subset], encoder) for subset in y["classification"].keys()}
+    y_encoder = refit_y_encoder(y["classification"]["train"])
+    y["classification"] = {subset: encode_y(y["classification"][subset], y_encoder) for subset in y["classification"].keys()}
 
 
     for task in y.keys():
@@ -159,9 +158,32 @@ def prepare_targets(items):
         print_info_targets(y[task])
         print()
 
+    return y, y_scaler, y_encoder
 
+def test_train(X, y, y_scaler, y_encoder, feature_keys, task, config_repo):
+    print("\n** Step 3: Training **")
+
+    config = download_config(config_repo, PREV_VERSION, HF_TOKEN)
+    print(f"  Config: {config}")
+
+    _X = {subset: {ft: X[subset][ft]} for subset in X.keys() for ft in X[subset].keys() if ft in feature_keys}
+    model, metadata, updated_config = train_single_model(
+        _X,
+        y[task],
+        task,
+        config,
+        y_encoder=y_encoder
+    )
+
+    print(f"\n  ✓ Training complete")
+    print(f"  val_loss : {metadata['val_loss']:.4f}")
+    print(f"  scores   : {metadata['scores']}")
+    print(f"  time     : {metadata['time']:.1f}s")
 
 if __name__ == "__main__":
     items = load_items()
-    extract_features(items)
-    prepare_targets(items)
+    X = extract_features(items)
+    y, y_scaler, y_encoder = prepare_targets(items)
+
+    test_train(X, y, y_scaler, y_encoder, feature_keys = ["tfidf"], task="classification", config_repo=CLF_TFIDF_REPO)
+
