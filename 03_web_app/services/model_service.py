@@ -15,6 +15,7 @@ from services import download_model, download_model_config, download_y_encoder, 
 _MODELS = {}
 _DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 _DECODERS = {}
+_CONFIGS = {}
 
 activation_funcs = {
     "relu": nn.ReLU,
@@ -35,16 +36,32 @@ def build_model(config):
     )
     return model
 
+def load_config(repo_id: str, version: str) -> dict:
+    """Load and cache a model version's config.json."""
+    key = f"{repo_id}:{version}"
+    if key not in _CONFIGS:
+        config_path = download_model_config(repo_id, version)
+        with open(config_path) as f:
+            _CONFIGS[key] = json.load(f)
+    return _CONFIGS[key]
+
+
+def get_feature_order(repo_id: str, version: str) -> Optional[list]:
+    """
+    Feature order a model version was trained on (e.g. ["tfidf", "vit"]).
+    Returns None for legacy (v1) configs that predate feature_types inside cofig —
+    callers should fall back to alphabetical, which is the order v1 was trained in.
+    """
+    return load_config(repo_id, version).get("feature_types")
+
+
 def load_model(repo_id: str, version: str):
     key = f"{repo_id}:{version}"
     if key in _MODELS:
         return _MODELS[key]
 
+    config = load_config(repo_id, version)
     model_weights = download_model(repo_id, version)
-    model_config = download_model_config(repo_id, version)
-
-    with open(model_config) as f:
-        config = json.load(f)
 
     model = build_model(config)
     state_dict = torch.load(model_weights, map_location=_DEVICE, weights_only=True)

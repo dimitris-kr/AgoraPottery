@@ -10,7 +10,8 @@ from schemas import PredictionResponse, ChronologyPredictionSchema, PaginatedRes
     PotteryItemCreateFromPredictionSchema
 from services import auth_dependency, validate_input, get_feature_types, select_model, load_model, load_target_decoder, \
     extract_features, predict_single, upload_prediction_image, create_prediction_record, save_tmp_file, \
-    delete_prediction_image, match_expression, validate_prediction_exists, validate_prediction_not_validated
+    delete_prediction_image, match_expression, validate_prediction_exists, validate_prediction_not_validated, \
+    get_feature_order
 from services.data_service import get_data_source, assign_historical_period, validate_years, validate_unique_object_id, \
     validate_item_exists
 
@@ -38,7 +39,15 @@ async def predict(
 
     # Extract Features
     features = extract_features(db, feature_types, text, image_tmp_path)
-    feature_list = [feature_tensor for feature_tensor in features.values()]
+
+    # Order features to match how the model was trained.
+    # Newer configs carry feature_types; v1 configs don't → fall back to
+    # alphabetical (the order v1 was trained in: tfidf, vit).
+    feature_order = get_feature_order(db_model.hf_repo_id, db_model_version.version) or sorted(features.keys())
+    feature_list = [features[ft] for ft in feature_order]
+
+    print(feature_order)
+    print([f_tensor.shape for f_tensor in feature_list])
 
     # Load Model
     model = load_model(db_model.hf_repo_id, db_model_version.version)

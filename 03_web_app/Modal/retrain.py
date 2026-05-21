@@ -185,11 +185,9 @@ def _import_predictor():
 # ──────────────────────────────────────────────
 
 # Get Data Dimensions
-def _get_dimensions(X, y, task, y_encoder=None):
-    X_dim = [
-        _X.shape[1]
-        for feature_type, _X in X["train"].items()
-    ]
+def _get_dimensions(X, y, feature_types, task, y_encoder=None):
+    # input sizes follow the canonical feature order
+    X_dim = [X["train"][ft].shape[1] for ft in feature_types]
 
     if task == "classification":
         # CLASSIFICATION → dims = number of classes
@@ -248,14 +246,17 @@ def train_single_model(
 
     device = _get_device()
 
-    # Dimensions  (re-derived from current data, not inherited from previous version config)
-    X_dim, y_dim = _get_dimensions(X, y, task, y_encoder)
+    # Canonical feature order — MUST match predict-time ordering.
+    # Sorted alphabetically (tfidf, vit) so encoder[i] is always bound to the
+    # same feature, regardless of how the caller built the X dict.
+    feature_types = sorted(X["train"].keys())
 
-    print(X_dim, y_dim)
+    # Dimensions  (re-derived from current data, not inherited from previous version config)
+    X_dim, y_dim = _get_dimensions(X, y, feature_types, task, y_encoder)
 
     # Torch Datasets and Dataloaders
     datasets = {
-        subset: PotteryDataset([X[subset][ft] for ft in X[subset].keys()], y[subset])
+        subset: PotteryDataset([X[subset][ft] for ft in feature_types], y[subset])
         for subset in X.keys()
     }
     loaders = {
@@ -285,9 +286,11 @@ def train_single_model(
         lr=config["lr"],
     )
 
-    # Updated config — input_sizes + output_size reflect new version's actual architecture
+    # Updated config — input_sizes + output_size reflect new version's actual architecture.
+    # feature_types records the canonical order so predict-time can reproduce it.
     updated_config = {
         **config,
+        "feature_types": feature_types,
         "input_sizes": X_dim,
         "output_size": y_dim,
     }
@@ -295,3 +298,129 @@ def train_single_model(
     return model, metadata, updated_config
 
 
+# ──────────────────────────────────────────────
+# HF UPLOAD HELPERS
+# ──────────────────────────────────────────────
+
+# HF artifact filenames — MUST match the download side (services/hf_service.py)
+TFIDF_FILENAME     = "tfidf_vectorizer.joblib"
+Y_ENCODER_FILENAME = "y_encoder.pkl"
+Y_SCALER_FILENAME  = "y_scaler.pkl"
+MODEL_FILENAME     = "model.pt"
+CONFIG_FILENAME    = "config.json"
+METADATA_FILENAME  = "metadata.json"
+
+
+def upload_processor(
+        repo_id: str,
+        version: str,
+        repo_type: str,
+        processor,
+        processor_filename: str,
+        hf_token: str,
+):
+    """Upload a joblib-serializable object (tfidf vectorizer / y_encoder / y_scaler)."""
+    import joblib
+    from huggingface_hub import upload_file
+    import tempfile
+    from pathlib import Path
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / processor_filename
+        joblib.dump(processor, path)
+        upload_file(
+            path_or_fileobj=str(path),
+            path_in_repo=f"{version}/{processor_filename}",
+            repo_id=repo_id,
+            repo_type=repo_type,
+            token=hf_token,
+        )
+
+
+def upload_json(
+        repo_id: str,
+        version: str,
+        repo_type: str,
+        data: dict,
+        data_filename: str,
+        hf_token: str,
+):
+    """Upload a dict as a JSON file (config.json / metadata.json)."""
+    from huggingface_hub import upload_file
+    import tempfile
+    from pathlib import Path
+    import json
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / data_filename
+        path.write_text(json.dumps(data, indent=2))
+        upload_file(
+            path_or_fileobj=str(path),
+            path_in_repo=f"{version}/{data_filename}",
+            repo_id=repo_id,
+            repo_type=repo_type,
+            token=hf_token,
+        )
+
+
+def upload_model(
+        repo_id: str,
+        version: str,
+        model_state_dict,
+        model_filename: str,
+        hf_token: str,
+        repo_type: str = "model",
+):
+    """Upload a torch state dict (model.pt)."""
+    import torch
+    from huggingface_hub import upload_file
+    import tempfile
+    from pathlib import Path
+
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / model_filename
+        torch.save(model_state_dict, path)
+        upload_file(
+            path_or_fileobj=str(path),
+            path_in_repo=f"{version}/{model_filename}",
+            repo_id=repo_id,
+            repo_type=repo_type,
+            token=hf_token,
+        )
+
+
+def upload_model_files(
+        repo_id: str,
+        version: str,
+        model_state_dict,
+        config: dict,
+        metadata: dict,
+        hf_token: str,
+):
+    """Uploads model.pt, config.json (the UPDATED one), and metadata.json."""
+
+    upload_model(
+        repo_id=repo_id,
+        version=version,
+        model_state_dict=model_state_dict,
+        model_filename=MODEL_FILENAME,
+        hf_token=hf_token,
+    )
+
+    upload_json(
+        repo_id=repo_id,
+        version=version,
+        repo_type="model",
+        data=config,
+        data_filename=CONFIG_FILENAME,
+        hf_token=hf_token,
+    )
+
+    upload_json(
+        repo_id=repo_id,
+        version=version,
+        repo_type="model",
+        data=metadata,
+        data_filename=METADATA_FILENAME,
+        hf_token=hf_token,
+    )

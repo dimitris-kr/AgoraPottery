@@ -34,7 +34,7 @@ HF_IMAGE_REPO = os.getenv("HF_IMAGE_REPO")
 HF_TFIDF_REPO = os.getenv("TFIDF_REPO")
 
 PREV_VERSION = "v1"
-CLF_TFIDF_REPO = "dimitriskr/agora_pottery_chronology_classifier_tfidf"
+HF_REPO = "dimitriskr/agora_pottery_chronology_classifier_tfidf_vit"
 
 SUBSETS = ["train", "val"]
 
@@ -166,7 +166,13 @@ def test_train(X, y, y_scaler, y_encoder, feature_keys, task, config_repo):
     config = download_config(config_repo, PREV_VERSION, HF_TOKEN)
     print(f"  Config: {config}")
 
-    _X = {subset: {ft: X[subset][ft]} for subset in X.keys() for ft in X[subset].keys() if ft in feature_keys}
+    _X = {
+        subset: {
+            ft: X[subset][ft] for ft in X[subset].keys() if ft in feature_keys
+        }
+        for subset in X.keys()
+    }
+
     model, metadata, updated_config = train_single_model(
         _X,
         y[task],
@@ -185,5 +191,5 @@ if __name__ == "__main__":
     X = extract_features(items)
     y, y_scaler, y_encoder = prepare_targets(items)
 
-    test_train(X, y, y_scaler, y_encoder, feature_keys = ["tfidf"], task="classification", config_repo=CLF_TFIDF_REPO)
+    test_train(X, y, y_scaler, y_encoder, feature_keys = ["tfidf", "vit"], task="classification", config_repo=HF_REPO)
 
