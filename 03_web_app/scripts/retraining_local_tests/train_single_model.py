@@ -31,7 +31,6 @@ if not HF_TOKEN:
     raise EnvironmentError("HF_TOKEN not set in .env")
 
 HF_IMAGE_REPO = os.getenv("HF_IMAGE_REPO")
-HF_TFIDF_REPO = os.getenv("TFIDF_REPO")
 
 PREV_VERSION = "v1"
 HF_REPO = "dimitriskr/agora_pottery_chronology_classifier_tfidf_vit"

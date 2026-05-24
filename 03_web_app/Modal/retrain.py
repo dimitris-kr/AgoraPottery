@@ -303,12 +303,12 @@ def train_single_model(
 # ──────────────────────────────────────────────
 
 # HF artifact filenames — MUST match the download side (services/hf_service.py)
-TFIDF_FILENAME     = "tfidf_vectorizer.joblib"
+TFIDF_FILENAME = "tfidf_vectorizer.joblib"
 Y_ENCODER_FILENAME = "y_encoder.pkl"
-Y_SCALER_FILENAME  = "y_scaler.pkl"
-MODEL_FILENAME     = "model.pt"
-CONFIG_FILENAME    = "config.json"
-METADATA_FILENAME  = "metadata.json"
+Y_SCALER_FILENAME = "y_scaler.pkl"
+MODEL_FILENAME = "model.pt"
+CONFIG_FILENAME = "config.json"
+METADATA_FILENAME = "metadata.json"
 
 
 def upload_processor(
@@ -363,13 +363,13 @@ def upload_json(
         )
 
 
-def upload_model(
+def upload_torch_obj(
         repo_id: str,
         version: str,
-        model_state_dict,
-        model_filename: str,
+        repo_type: str,
+        torch_obj,
+        torch_obj_filename: str,
         hf_token: str,
-        repo_type: str = "model",
 ):
     """Upload a torch state dict (model.pt)."""
     import torch
@@ -378,11 +378,11 @@ def upload_model(
     from pathlib import Path
 
     with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / model_filename
-        torch.save(model_state_dict, path)
+        path = Path(tmp) / torch_obj_filename
+        torch.save(torch_obj, path)
         upload_file(
             path_or_fileobj=str(path),
-            path_in_repo=f"{version}/{model_filename}",
+            path_in_repo=f"{version}/{torch_obj_filename}",
             repo_id=repo_id,
             repo_type=repo_type,
             token=hf_token,
@@ -399,18 +399,21 @@ def upload_model_files(
 ):
     """Uploads model.pt, config.json (the UPDATED one), and metadata.json."""
 
-    upload_model(
+    repo_type = "model"
+
+    upload_torch_obj(
         repo_id=repo_id,
         version=version,
-        model_state_dict=model_state_dict,
-        model_filename=MODEL_FILENAME,
+        repo_type=repo_type,
+        torch_obj=model_state_dict,
+        torch_obj_filename=MODEL_FILENAME,
         hf_token=hf_token,
     )
 
     upload_json(
         repo_id=repo_id,
         version=version,
-        repo_type="model",
+        repo_type=repo_type,
         data=config,
         data_filename=CONFIG_FILENAME,
         hf_token=hf_token,
@@ -419,8 +422,212 @@ def upload_model_files(
     upload_json(
         repo_id=repo_id,
         version=version,
-        repo_type="model",
+        repo_type=repo_type,
         data=metadata,
         data_filename=METADATA_FILENAME,
         hf_token=hf_token,
     )
+
+
+# ──────────────────────────────────────────────
+# ORCHESTRATION
+# ──────────────────────────────────────────────
+# Function for modal decorator but callable directly for local testing or anywhere else.
+
+def run_training(payload: dict):
+    """
+    Orchestrate a full retraining run for every model variant.
+
+    payload keys:
+      training_run_id : int
+      new_version     : str   e.g. "v2"  ("v_test" for throwaway local-test uploads)
+      prev_version    : str   e.g. "v1"  — seeds each model's hyperparameter config
+      items_train     : list[dict]  {pottery_item_id, description, image_path,
+                                     historical_period, start_year, year_range}
+      items_val       : list[dict]
+      hf_tfidf_repo   : str   HF dataset repo for the TF-IDF features & vectorizer
+      hf_vit_repo     : str   HF dataset repo for the VIT features
+      hf_images_repo  : str   HF dataset repo where training images live
+      models          : list[dict]  {model_id, model_repo, task, feature_keys}
+                                     - model_id   → DB PK, echoed back in results
+                                                    so finalize_retrain can match by PK
+                                     - model_repo → HF repo path for uploads
+      webhook_url     : str | None — if None/empty, the webhook callback is skipped
+    """
+    import os
+    import traceback
+    import requests
+
+    hf_token = os.environ["HF_TOKEN"]
+    webhook_secret_val = os.environ.get("WEBHOOK_SECRET", "")
+
+    items = {
+        "train": payload["items_train"],
+        "val": payload["items_val"],
+    }
+    versions = {
+        "new": payload["new_version"],
+        "prev": payload["prev_version"],
+    }
+    hf_repos = {
+        "images": payload["hf_images_repo"],
+        "tfidf": payload["hf_tfidf_repo"],
+        "vit": payload["hf_vit_repo"],
+    }
+    model_info = payload["models"]
+    webhook_url = payload.get("webhook_url")
+    training_run_id = payload["training_run_id"]
+
+    results = []
+
+    try:
+        # ── 1. Re-fit TF-IDF vectorizer + upload ──
+        print("\n** Re-fitting TF-IDF vectorizer **")
+        vectorizer = refit_tfidf_vectorizer(items["train"])
+
+        # Upload Vectorizer
+        upload_processor(
+            repo_id=hf_repos["tfidf"],
+            version=versions["new"],
+            repo_type="dataset",
+            processor=vectorizer,
+            processor_filename=TFIDF_FILENAME,
+            hf_token=hf_token,
+        )
+        print(f"   Uploaded vectorizer → {hf_repos["tfidf"]}@{versions["new"]}")
+
+        # ── 2. Extract features ONCE (reused by every model variant) ──
+        print("\n** Extracting features **")
+        subsets = ("train", "val")
+        X = {
+            subset: {
+                "tfidf": extract_tfidf_features(items[subset], vectorizer),
+                "vit": extract_vit_features(items[subset], hf_repos["images"], hf_token),
+            }
+            for subset in subsets
+        }
+        for subset in subsets:
+            for ft, tensor in X[subset].items():
+                print(f"   X[{subset}][{ft}]: {tuple(tensor.shape)}")
+
+        # Upload Features
+        for subset in subsets:
+            for ft, tensor in X[subset].items():
+                upload_torch_obj(
+                    repo_id=hf_repos[ft],
+                    version=versions["new"],
+                    repo_type="dataset",
+                    torch_obj=tensor,
+                    torch_obj_filename=f"X_{subset}_{ft}.pt",
+                    hf_token=hf_token,
+                )
+                print(f"   Uploaded features X[{subset}][{ft}] → {hf_repos[ft]}@{versions["new"]}")
+
+        # ── 3. Build targets ONCE per task type ──
+        print("\n** Building targets **")
+        y = {}
+
+        y["regression"] = {subset: get_regression_targets(items[subset]) for subset in subsets}
+        y_scaler = refit_y_scaler(y["regression"]["train"])
+        y["regression"] = {subset: scale_y(y["regression"][subset], y_scaler) for subset in y["regression"].keys()}
+
+        y["classification"] = {subset: get_classification_targets(items[subset]) for subset in subsets}
+        y_encoder = refit_y_encoder(y["classification"]["train"])
+        y["classification"] = {subset: encode_y(y["classification"][subset], y_encoder) for subset in y["classification"].keys()}
+
+        for task in y.keys():
+            for subset, tensor in y[task].items():
+                print(f"   y[{task}][{subset}]: {tuple(tensor.shape)}")
+
+        # ── 4. Train every model variant ──
+        for mi in model_info:
+            model_id = mi["model_id"]
+            model_repo = mi["model_repo"]
+            task = mi["task"]
+            feature_keys = mi["feature_keys"]
+
+            print(f"\n** Training model_id={model_id} at: {model_repo} | task={task} | features={feature_keys} **")
+
+            # Slice X to only this model's feature types
+            _X = {
+                subset: {
+                    ft: X[subset][ft] for ft in X[subset].keys() if ft in feature_keys
+                }
+                for subset in X.keys()
+            }
+
+            # Seed hyperparameters from the previous version's config.json
+            config = download_config(model_repo, versions["prev"], hf_token)
+
+            y_processor_kwargs = (
+                {"y_encoder": y_encoder} if task == "classification"
+                else {"y_scaler": y_scaler}
+            )
+
+            model, metadata, updated_config = train_single_model(
+                _X,
+                y[task],
+                task,
+                config,
+                **y_processor_kwargs,
+            )
+
+            upload_model_files(
+                repo_id=model_repo,
+                version=versions["new"],
+                model_state_dict=model.state_dict(),
+                config=updated_config,
+                metadata=metadata,
+                hf_token=hf_token,
+            )
+
+            # Upload the matching y processor
+            upload_processor(
+                repo_id=model_repo,
+                version=versions["new"],
+                repo_type="model",
+                processor=y_encoder if task == "classification" else y_scaler,
+                processor_filename=Y_ENCODER_FILENAME if task == "classification" else Y_SCALER_FILENAME,
+                hf_token=hf_token,
+            )
+
+            results.append({
+                "model_id": model_id,
+                "val_loss": metadata["val_loss"],
+                "train_time": metadata["time"],
+                "scores": metadata["scores"],
+                "train_sample_size": len(items["train"]) + len(items["val"]),
+            })
+            print(f"   ✓ Done. val_loss={metadata['val_loss']:.4f}")
+
+        status = "success"
+        error = None
+
+    except Exception:
+        status = "error"
+        error = traceback.format_exc()
+        print("\nTRAINING FAILED:\n", error)
+
+    # ── 5. Webhook callback (optional — skipped if no URL provided) ──
+    if webhook_url:
+        webhook_payload = {
+            "training_run_id": training_run_id,
+            "new_version": versions["new"],
+            "status": status,
+            "error": error,
+            "results": results,
+        }
+        try:
+            r = requests.post(
+                webhook_url,
+                json=webhook_payload,
+                headers={"Authorization": f"Bearer {webhook_secret_val}"},
+                timeout=30,
+            )
+            print(f"\nWebhook → {r.status_code}")
+        except Exception as e:
+            print(f"\nWebhook call failed: {e}")
+    else:
+        print("\n(no webhook_url provided — skipping callback)")
+
+    return {"status": status, "results": results, "error": error}

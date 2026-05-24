@@ -12,14 +12,21 @@ Responsibilities:
   - Handle the webhook callback from Modal (finalize DB state)
 """
 import os
+import secrets as _stdlib_secrets
 
 import numpy as np
-from fastapi import HTTPException
+from fastapi import HTTPException, Header
 from sklearn.model_selection import train_test_split
 from sqlalchemy.orm import Session
 
-from models import PotteryItemInTrainingRun, PotteryItem, ModelVersion, Model, ChronologyLabel, TrainingRun
-from schemas import EligibilitySchema, RetrainStartedSchema, TrainingRunSchema
+from models import (
+    PotteryItemInTrainingRun, PotteryItem, ModelVersion, Model, ChronologyLabel,
+    TrainingRun, FeatureSet,
+)
+from schemas import (
+    EligibilitySchema, RetrainStartedSchema, TrainingRunSchema,
+    WebhookPayloadSchema, RetrainFinalizedSchema,
+)
 from services import get_current_training_run
 
 # ──────────────────────────────────────────────
@@ -33,7 +40,9 @@ RANDOM_STATE = 42
 STRATIFY_COL = "historical_period"
 
 HF_IMAGE_REPO = os.getenv("HF_IMAGE_REPO")
-HF_TFIDF_REPO = os.getenv("TFIDF_REPO")
+HF_TFIDF_REPO = os.getenv("HF_TFIDF_REPO")
+HF_VIT_REPO = os.getenv("HF_VIT_REPO")
+
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 
@@ -180,7 +189,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
         })
 
     # ── 8. Collect model configs from DB ──
-    model_configs = _build_model_configs(db)
+    model_configs = build_model_configs(db)
 
     # ── 9. Build full Modal payload ──
     modal_payload = {
@@ -189,7 +198,8 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
         "new_version": new_version,
         "prev_version": prev_version,
         "training_run_id": new_run.id,
-        "tfidf_repo": HF_TFIDF_REPO,
+        "hf_tfidf_repo": HF_TFIDF_REPO,
+        "hf_vit_repo": HF_VIT_REPO,
         "hf_images_repo": HF_IMAGE_REPO,
         "models": model_configs,
         "webhook_url": WEBHOOK_URL,
@@ -231,16 +241,20 @@ def _bump_version(version: str) -> str:
         return version + "_new"
 
 
-def _build_model_configs(db: Session) -> list[dict]:
+def build_model_configs(db: Session) -> list[dict]:
     """
-    Build the list of {model_repo, task, feature_keys} dicts
+    Build the list of {model_id, model_repo, task, feature_keys} dicts
     by reading the Model, Task, and FeatureSet tables.
+
+    model_id is included so the webhook can echo it back, letting
+    finalize_retrain match by PK instead of string-matching on hf_repo_id.
     """
     models = db.query(Model).all()
     configs = []
     for m in models:
         feature_keys = sorted([fs.feature_type for fs in m.feature_sets])
         configs.append({
+            "model_id": m.id,
             "model_repo": m.hf_repo_id,
             "task": m.task.name.lower(),
             "feature_keys": feature_keys,
@@ -266,3 +280,190 @@ def _spawn_modal_job(payload: dict) -> str:
             detail=f"Failed to spawn Modal training job: {e}",
         )
 
+
+# ──────────────────────────────────────────────
+# WEBHOOK — AUTH
+# ──────────────────────────────────────────────
+
+def verify_webhook_secret(authorization: str | None = Header(None)) -> None:
+    """
+    FastAPI dependency for the Modal webhook route.
+    Expects:  Authorization: Bearer <WEBHOOK_SECRET>
+    Uses constant-time compare to avoid timing attacks.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail="Missing or malformed Authorization header (expected 'Bearer <secret>')",
+        )
+
+    provided_secret = authorization.removeprefix("Bearer ").strip()
+
+    if not WEBHOOK_SECRET:
+        # Server misconfiguration — refuse rather than accept anything
+        raise HTTPException(
+            status_code=500,
+            detail="Server WEBHOOK_SECRET is not configured",
+        )
+
+    if not _stdlib_secrets.compare_digest(provided_secret, WEBHOOK_SECRET):
+        raise HTTPException(status_code=401, detail="Invalid webhook secret")
+
+
+# ──────────────────────────────────────────────
+# WEBHOOK — FINALIZE
+# ──────────────────────────────────────────────
+
+def _first_metric_value(scores: dict, metric: str) -> float | None:
+    """
+    Extract the FIRST per-target value of a metric from train()'s scores dict.
+
+    `scores` shape:
+      classification → {"accuracy": [single_value], ...}                (1 target)
+      regression     → {"mae": [start_year, year_range], ...}           (2 targets)
+
+    For regression-MAE this returns the start_year MAE, which is more meaningful
+    to display than an average across the two targets.
+    For classification metrics the 1-element list makes vals[0] == the value.
+
+    `if not vals` covers both missing-key (None) and empty-list cases.
+    """
+    vals = scores.get(metric)
+    if not vals:
+        return None
+    return vals[0]
+
+
+def finalize_retrain(db: Session, payload: WebhookPayloadSchema) -> RetrainFinalizedSchema:
+    """
+    Called by routes/models_retrain.py /complete when Modal POSTs back.
+
+    Success path (payload.status == "success"):
+      - Flip all current ModelVersion.is_current → False
+      - For each result: create a new ModelVersion(is_current=True)
+      - Promote the new TrainingRun (is_current=True)
+      - Bump every FeatureSet.current_version to the new version
+
+    Failure path (anything else):
+      - Delete the half-created TrainingRun + its pivot rows
+      - Restore the most recent prior TrainingRun as is_current=True
+    """
+    training_run = db.get(TrainingRun, payload.training_run_id)
+    if training_run is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"TrainingRun {payload.training_run_id} not found",
+        )
+
+    # ── FAILURE → rollback ──────────────────────
+    if payload.status != "success":
+        db.query(PotteryItemInTrainingRun).filter(
+            PotteryItemInTrainingRun.training_run_id == training_run.id
+        ).delete()
+        db.delete(training_run)
+
+        prev_run = (
+            db.query(TrainingRun)
+            .filter(TrainingRun.id != payload.training_run_id)
+            .order_by(TrainingRun.id.desc())
+            .first()
+        )
+        if prev_run:
+            prev_run.is_current = True
+
+        db.commit()
+
+        # Best-effort: clean up any partial v{N}/ uploads that made it to HF
+        # before run_training failed. DB is committed first so a cleanup error
+        # can't corrupt the DB rollback.
+        _cleanup_hf_version(db, payload.new_version)
+
+        return RetrainFinalizedSchema(
+            status="error",
+            new_version=payload.new_version,
+            models_updated=[],
+        )
+
+    # ── SUCCESS → promote new versions atomically ──
+    # 1. Flip every current ModelVersion off before creating the new ones.
+    db.query(ModelVersion).filter(ModelVersion.is_current == True).update(
+        {ModelVersion.is_current: False}
+    )
+
+    # 2. Create one new ModelVersion per result.
+    #    run_training is all-or-nothing: if we got here, every result represents
+    #    a model that trained + uploaded successfully.
+    models_updated: list[str] = []
+    for result in payload.results:
+        model_row = db.get(Model, result.model_id)
+        if model_row is None:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Model with id={result.model_id} not found in DB",
+            )
+
+        new_mv = ModelVersion(
+            model_id=model_row.id,
+            training_run_id=training_run.id,
+            version=payload.new_version,
+            train_sample_size=result.train_sample_size,
+            train_time=result.train_time,
+            val_loss=result.val_loss,
+            val_accuracy=_first_metric_value(result.scores, "accuracy"),
+            val_mae=_first_metric_value(result.scores, "mae"),
+            is_current=True,
+        )
+        db.add(new_mv)
+        models_updated.append(model_row.name)
+
+    # 3. Promote the new TrainingRun.
+    training_run.is_current = True
+
+    # 4. Bump FeatureSet pointers so predict-time pulls the new artifacts
+    #    (TF-IDF vectorizer in particular — see services/feature_service.py).
+    db.query(FeatureSet).update({FeatureSet.current_version: payload.new_version})
+
+    db.commit()
+
+    return RetrainFinalizedSchema(
+        status="success",
+        new_version=payload.new_version,
+        models_updated=models_updated,
+    )
+
+
+def _cleanup_hf_version(db: Session, version: str) -> None:
+    """
+    Best-effort cleanup of orphan HF artifacts after a failed retrain.
+
+    Walks every model repo (Model.hf_repo_id) and every dataset repo
+    (FeatureSet.hf_repo_id) and tries to delete the `{version}/` folder.
+    Failures are swallowed — a folder may legitimately not exist on some
+    repos if training failed before any upload reached them.
+
+    Called by finalize_retrain on rollback, AFTER the DB rollback has
+    committed, so an HF error can't leave the DB in a bad state.
+    """
+    from huggingface_hub import HfApi
+    api = HfApi(token=os.getenv("HF_TOKEN"))
+
+    repos = (
+        [(m.hf_repo_id, "model") for m in db.query(Model).all()]
+        + [(fs.hf_repo_id, "dataset") for fs in db.query(FeatureSet).all()]
+    )
+
+    print(f"[finalize_retrain] HF cleanup for {version}/ across {len(repos)} repos")
+    for repo_id, repo_type in repos:
+        try:
+            api.delete_folder(
+                path_in_repo=version,
+                repo_id=repo_id,
+                repo_type=repo_type,
+                commit_message=f"Rollback: delete failed-run artifacts {version}/",
+            )
+            print(f"  ✓ Deleted {repo_type}:{repo_id}@{version}/")
+        except Exception as e:
+            # Folder may not exist (training never uploaded there) or HF may
+            # be transiently unavailable — log and continue, don't fail the
+            # webhook just because cleanup is incomplete.
+            print(f"  - Skipped {repo_type}:{repo_id}@{version}/: {type(e).__name__}: {e}")

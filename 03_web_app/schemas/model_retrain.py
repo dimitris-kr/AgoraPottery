@@ -40,13 +40,13 @@ class RetrainStartedSchema(BaseModel):
 # ──────────────────────────────────────────────
 
 class ModelTrainingResultSchema(BaseModel):
-    model_repo: str
-    task: str
-    feature_keys: list[str]
+    model_id: int            # DB PK — finalize_retrain looks up the Model row by this
     val_loss: float
+    train_time: float | None = None
     scores: dict
     train_sample_size: int
-    success: bool
+    # no per-model `success` flag — run_training is all-or-nothing
+    # (any model failing → status="error" → full rollback in finalize_retrain).
 
 
 class WebhookPayloadSchema(BaseModel):
@@ -55,7 +55,8 @@ class WebhookPayloadSchema(BaseModel):
     status: str
     error: str | None
     results: list[ModelTrainingResultSchema]
-    secret: str
+    # shared secret is sent in the `Authorization: Bearer <secret>` header,
+    # not the body — see services.retrain_service.verify_webhook_secret.
 
 
 # ──────────────────────────────────────────────
