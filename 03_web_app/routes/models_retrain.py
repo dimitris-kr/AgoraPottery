@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Depends
 
 from database import db_dependency
-from schemas import EligibilitySchema, RetrainStartedSchema, RetrainFinalizedSchema, WebhookPayloadSchema
-from services import auth_dependency, trigger_retrain, verify_webhook_secret, finalize_retrain
-from services import get_eligibility
+from schemas import (
+    EligibilitySchema, RetrainStartedSchema, RetrainFinalizedSchema,
+    WebhookPayloadSchema, JobStatusSchema,
+)
+from services import (
+    auth_dependency, trigger_retrain, verify_webhook_secret, finalize_retrain,
+    get_eligibility, get_job_status,
+)
 
 import os
 
@@ -64,3 +69,23 @@ def retrain_complete(
     On failure: rolls back the half-created TrainingRun and restores the previous one.
     """
     return finalize_retrain(db, payload)
+
+
+# ──────────────────────────────────────────────
+# STATUS POLLING — frontend polls this while a retrain is in flight
+# ──────────────────────────────────────────────
+
+@router.get("/status/{job_id}", response_model=JobStatusSchema)
+def retrain_status(
+    job_id: str,
+    user: auth_dependency,
+):
+    """
+    Poll the status of a running Modal training job. Returns one of:
+      "running" | "success" | "failure" | "not_found"
+
+    Frontend polls every few seconds to get job progress. Note that
+    "success" here means run_training itself returned cleanly — the
+    webhook (POST /complete) is what actually flips ModelVersion.is_current.
+    """
+    return get_job_status(job_id)

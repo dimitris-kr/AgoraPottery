@@ -1,5 +1,5 @@
 """
-run_training_local_test.py
+test_train_all.py
 --------------------------
 End-to-end local test of the Modal `run_training` orchestrator.
 
@@ -21,7 +21,7 @@ from Modal.retrain import run_training
 from services import build_model_configs
 
 # Reuse the item-loading helper from the original local-test script
-from train_single_model import load_items
+from test_train_single import load_items
 
 load_dotenv()
 

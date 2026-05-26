@@ -25,7 +25,7 @@ from models import (
 )
 from schemas import (
     EligibilitySchema, RetrainStartedSchema, TrainingRunSchema,
-    WebhookPayloadSchema, RetrainFinalizedSchema,
+    WebhookPayloadSchema, RetrainFinalizedSchema, JobStatusSchema,
 )
 from services import get_current_training_run
 
@@ -448,8 +448,8 @@ def _cleanup_hf_version(db: Session, version: str) -> None:
     api = HfApi(token=os.getenv("HF_TOKEN"))
 
     repos = (
-        [(m.hf_repo_id, "model") for m in db.query(Model).all()]
-        + [(fs.hf_repo_id, "dataset") for fs in db.query(FeatureSet).all()]
+            [(m.hf_repo_id, "model") for m in db.query(Model).all()]
+            + [(fs.hf_repo_id, "dataset") for fs in db.query(FeatureSet).all()]
     )
 
     print(f"[finalize_retrain] HF cleanup for {version}/ across {len(repos)} repos")
@@ -467,3 +467,39 @@ def _cleanup_hf_version(db: Session, version: str) -> None:
             # be transiently unavailable — log and continue, don't fail the
             # webhook just because cleanup is incomplete.
             print(f"  - Skipped {repo_type}:{repo_id}@{version}/: {type(e).__name__}: {e}")
+
+
+# ──────────────────────────────────────────────
+# JOB STATUS POLLING
+# ──────────────────────────────────────────────
+
+def get_job_status(job_id: str) -> JobStatusSchema:
+    """
+    Non-blocking check on a spawned Modal training job.
+
+    Frontend polls this every few seconds to get job progress.
+    Returns one of:
+      - "running"   : still working (Modal hasn't returned yet)
+      - "success"   : function returned cleanly (result attached)
+      - "failure"   : function raised inside Modal (error attached)
+      - "not_found" : Modal doesn't recognise the call ID
+
+    Note: a "success" here means run_training itself completed without raising.
+    The DB promotion happens separately via the webhook + finalize_retrain —
+    the frontend should still cross-reference ModelVersion.is_current after
+    seeing "success" before declaring the run "done".
+    """
+    try:
+        import modal
+        call = modal.functions.FunctionCall.from_id(job_id)
+        # timeout=0 → return immediately if not finished, raise TimeoutError
+        result = call.get(timeout=0)
+        return JobStatusSchema(status="success", result=result)
+    except TimeoutError:
+        return JobStatusSchema(status="running")
+    except Exception as e:
+        msg = str(e)
+        if "not found" in msg.lower():
+            return JobStatusSchema(status="not_found")
+        # Any other exception = the Modal function raised inside the container
+        return JobStatusSchema(status="failure", error=msg)

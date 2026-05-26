@@ -1,0 +1,67 @@
+Choose Mode: success | error | cleanup
+success
+
+** Setup **
+   Created TrainingRun id=4 (marker='test-finalize', is_current=False)
+   Built webhook payload: 6 results, new_version='v_test'
+
+** Calling finalize_retrain(db, payload) **
+   → finalize_retrain returned: status=success  models_updated=['agora_pottery_chronology_classifier_tfidf', 'agora_pottery_chronology_classifier_vit', 'agora_pottery_chronology_classifier_tfidf_vit', 'agora_pottery_chronology_regressor_tfidf', 'agora_pottery_chronology_regressor_vit', 'agora_pottery_chronology_regressor_tfidf_vit']
+
+** DB state after **
+   ModelVersions (version='v_test', is_current=True): 6 records
+      id=13 model_id=1 val_loss=0.5 val_acc=0.72 val_mae=None train_time=12.3
+      id=14 model_id=2 val_loss=0.5 val_acc=0.72 val_mae=None train_time=12.3
+      id=15 model_id=3 val_loss=0.5 val_acc=0.72 val_mae=None train_time=12.3
+      id=16 model_id=4 val_loss=0.5 val_acc=None val_mae=42.0 train_time=12.3
+      id=17 model_id=5 val_loss=0.5 val_acc=None val_mae=42.0 train_time=12.3
+      id=18 model_id=6 val_loss=0.5 val_acc=None val_mae=42.0 train_time=12.3
+   Non-v_test ModelVersions still is_current=True: 0 (0 expected)
+   Current TrainingRun: id=4 (4 expect)
+   FeatureSet versions: {'tfidf': 'v_test', 'vit': 'v_test'} ('v_test' expected for all)
+
+
+------------------------------------------------------------------------------------------------------------------------
+
+
+Choose Mode: success | error | cleanup
+cleanup
+   Deleted 6 ModelVersion(s) at version='v_test'
+   Set 6 'v1' ModelVersion(s) to is_current=True
+   Reset 2 FeatureSet(s) to current_version='v1'
+   Deleted 5 test PotteryItemInTrainingRun rows with training_run_id==4
+   Deleted 1 test TrainingRun(s)
+   Set TrainingRun id=1 to is_current=True
+
+   ✓ Cleanup complete
+
+
+------------------------------------------------------------------------------------------------------------------------
+
+
+Choose Mode: success | error | cleanup
+error
+
+** Setup **
+   Created TrainingRun id=5 (is_current=False)
+   Previous TrainingRun id=1 (will be restored after rollback)
+
+** Calling finalize_retrain(db, payload) **
+   (this will also attempt to delete v_test/ folders on HF — best-effort)
+[finalize_retrain] HF cleanup for v_test/ across 8 repos
+  ✓ Deleted model:dimitriskr/agora_pottery_chronology_classifier_tfidf@v_test/
+  ✓ Deleted model:dimitriskr/agora_pottery_chronology_classifier_vit@v_test/
+  ✓ Deleted model:dimitriskr/agora_pottery_chronology_classifier_tfidf_vit@v_test/
+  ✓ Deleted model:dimitriskr/agora_pottery_chronology_regressor_tfidf@v_test/
+  ✓ Deleted model:dimitriskr/agora_pottery_chronology_regressor_vit@v_test/
+  ✓ Deleted model:dimitriskr/agora_pottery_chronology_regressor_tfidf_vit@v_test/
+  ✓ Deleted dataset:dimitriskr/agora_pottery_tfidf@v_test/
+  ✓ Deleted dataset:dimitriskr/agora_pottery_vit@v_test/
+   → finalize_retrain returned status=error
+
+** DB state after **
+   New TrainingRun id=5: deleted ✓
+   Previous TrainingRun id=1 is_current=True: ✓ restored
+   Orphan PotteryItemInTrainingRun rows: 0 (0 expected)
+
+** No DB cleanup needed — error path already rolled back **
