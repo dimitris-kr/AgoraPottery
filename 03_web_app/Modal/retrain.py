@@ -158,25 +158,18 @@ def encode_y(y: list[str], encoder):
 
 def _import_predictor():
     """
-    Import PotteryChronologyPredictor — tries local path first, then the
-    Modal-container path where the file is mounted via add_local_file.
+    Import PotteryChronologyPredictor.
+
+    Works both locally and inside the Modal container — `add_local_python_source`
+    in modal_app.py mounts the ML package at /root/ML/, so `from ML.…` resolves
+    the same way it does locally.
     """
-    try:
-        from ML.PotteryChronologyPredictor import (
-            PotteryChronologyPredictor,
-            PotteryDataset,
-            activation_funcs,
-            train,
-        )
-    except ImportError:
-        import sys
-        sys.path.insert(0, "/app")
-        from PotteryChronologyPredictor import (
-            PotteryChronologyPredictor,
-            PotteryDataset,
-            activation_funcs,
-            train,
-        )
+    from ML.PotteryChronologyPredictor import (
+        PotteryChronologyPredictor,
+        PotteryDataset,
+        activation_funcs,
+        train,
+    )
     return PotteryChronologyPredictor, PotteryDataset, activation_funcs, train
 
 

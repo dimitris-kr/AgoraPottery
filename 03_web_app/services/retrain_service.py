@@ -269,9 +269,10 @@ def _spawn_modal_job(payload: dict) -> str:
     """
     try:
         import modal
-        # Import the deployed Modal function
-        # The app name must match what's in modal_training.py: app = modal.App("agora-pottery-retrain")
-        TrainingFunction = modal.Function.lookup("agora-pottery-retrain", "run_training")
+        # Import the deployed Modal function.
+        # The app name must match what's in Modal/modal_app.py:
+        #   app = modal.App("agora-pottery-retrain")
+        TrainingFunction = modal.Function.from_name("agora-pottery-retrain", "run_training")
         call = TrainingFunction.spawn(payload)
         return call.object_id
     except Exception as e:
@@ -491,7 +492,7 @@ def get_job_status(job_id: str) -> JobStatusSchema:
     """
     try:
         import modal
-        call = modal.functions.FunctionCall.from_id(job_id)
+        call = modal.FunctionCall.from_id(job_id)
         # timeout=0 → return immediately if not finished, raise TimeoutError
         result = call.get(timeout=0)
         return JobStatusSchema(status="success", result=result)

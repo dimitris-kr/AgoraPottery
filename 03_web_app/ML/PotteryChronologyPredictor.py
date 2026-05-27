@@ -4,10 +4,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchinfo
-from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, median_absolute_error, accuracy_score, \
     precision_score, recall_score, f1_score
+from torch.utils.data import Dataset, DataLoader
 
 # CONSTANTS
 
@@ -146,19 +145,8 @@ class PotteryChronologyPredictor(nn.Module):
 
         return y
 
-    def summary(self, style="torchinfo"):
-        if style == "pytorch":
-            print(self)
-        elif style == "torchinfo":
-            print(
-                torchinfo.summary(
-                    self,
-                    input_size=[(input_size,) for input_size in self.input_sizes],
-                    batch_dim=0,
-                    device=self.device,
-                    col_names=("input_size", "output_size", "num_params", "mult_adds")
-                )
-            )
+    def summary(self):
+        print(self)
 
 
 # PREDICT (INFERENCE)

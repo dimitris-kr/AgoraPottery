@@ -1,7 +1,7 @@
 """
 modal_app.py
 ------------
-The ONLY Modal-aware file in this package. It defines the Modal App and
+The ONLY Modal-aware file in the project. It defines the Modal App and
 image, then decorates `run_training` (the plain orchestration function in
 retrain.py) for cloud execution.
 
@@ -10,9 +10,6 @@ Deploy:
 
 Production call site (services/retrain_service.py):
     modal.Function.lookup("agora-pottery-retrain", "run_training").spawn(payload)
-
-For local testing the plain function in retrain.py is called directly — see
-scripts/run_training_local_test.py. No Modal runtime involved.
 """
 
 import modal
@@ -23,12 +20,11 @@ from Modal.retrain import run_training as _run_training_body
 app = modal.App("agora-pottery-retrain")
 
 # Library versions pinned to match the local conda env (environment.yml).
-# Pillow comes in as a torchvision dep, but we pin it explicitly anyway.
 #
 # add_local_python_source mounts both packages into the container at their
 # natural Python locations, so `from Modal.retrain import ...` and
 # `from ML.PotteryChronologyPredictor import ...` both work inside the
-# container exactly as they do locally. (The /app/ fallback in
+# container as they do locally. (The /app/ fallback in
 # retrain._import_predictor is unused with this setup but kept as a safety net.)
 image = (
     modal.Image.debian_slim(python_version="3.12")
