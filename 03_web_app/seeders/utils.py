@@ -64,3 +64,6 @@ def load_metadata_from_hf(repo_id: str, version: str = "v1") -> dict:
     )
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
+def get_spread_timestamp(date, window, record_idx, num_of_records):
+    return date + window * (record_idx / max(1, num_of_records - 1))

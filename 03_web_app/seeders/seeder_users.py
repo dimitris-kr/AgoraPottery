@@ -1,4 +1,5 @@
 from models.User import User
+from seeders.config import DATE_USERS
 from services import hash_password
 
 def seed_users(db):
@@ -6,7 +7,10 @@ def seed_users(db):
 
     fields = {
         "username": "admin",
-        "password": "agor@p0ttery25!"
+        "password": "agor@p0ttery25!",
+
+        "created_at": DATE_USERS,
+        "updated_at": DATE_USERS,
     }
 
     # Check if exists

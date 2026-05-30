@@ -1,14 +1,11 @@
 import os
 
-from models import Task, Model, FeatureSet, ModelUsesFeatureSet, ModelVersion, Target, ModelHasTarget, TrainingRun, \
-    PotteryItemInTrainingRun
-import json
-from huggingface_hub import hf_hub_download
-from sqlalchemy import and_, func
-
+from models import Task, Model, FeatureSet, ModelUsesFeatureSet, ModelVersion, Target, ModelHasTarget
 from seeders.utils import load_metadata_from_hf, get_current_training_run, get_train_sample_size, print_status
+from seeders.config import DATE_MODEL_VERSIONS_V1
 
 HF_USERNAME = os.getenv("HF_USERNAME")
+
 
 def seed_models(db):
     MODELS = [
@@ -133,6 +130,9 @@ def seed_models(db):
                     if task_name == "Regression"
                     else None
                 ),
+
+                created_at=DATE_MODEL_VERSIONS_V1,
+                updated_at=DATE_MODEL_VERSIONS_V1,
             )
             db.add(mv)
 

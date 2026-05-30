@@ -1,5 +1,7 @@
 from database import SessionLocal
 from models import PotteryItemInTrainingRun, PotteryItem, TrainingRun, ChronologyPrediction, ModelVersion, Model
+from seeders.config import DATE_CHRONOLOGY_PREDICTIONS, WINDOW_CHRONOLOGY_PREDICTIONS
+from seeders.utils import get_spread_timestamp
 from services import get_feature_types, select_model, download_image_tmp, extract_features, load_model, \
     load_target_decoder, predict_single, create_prediction_record
 
@@ -20,7 +22,7 @@ def get_test_pottery_items(db, training_run_id):
     )
 
 
-def create_prediction_for_item(db, item, task):
+def create_prediction_for_item(db, item, task, timestamp):
     text = item.description
     image_repo_path = item.image_path
 
@@ -46,15 +48,23 @@ def create_prediction_for_item(db, item, task):
     prediction, breakdown = predict_single(task, model, feature_list, decoder)
 
     # Save Prediction
-    prediction_record = create_prediction_record(db, task, text, image_repo_path, prediction, breakdown, db_model_version, status="validated")
+    prediction_record = create_prediction_record(db, task, text, image_repo_path, prediction, breakdown,
+                                                 db_model_version, status="validated")
 
     prediction_record.pottery_item_id = item.id
+
+    # Demo predictions get fixed historical timestamp (real dev timeline)
+    # Live predictions get the default func.now() .
+    # The caller passes an incrementing timestamp so the list view sorts naturally.
+    prediction_record.created_at = timestamp
+    prediction_record.updated_at = timestamp
 
     db.add(prediction_record)
     db.flush()
 
     if image_tmp_path:
         image_tmp_path.unlink()
+
 
 def run_batch_predictions():
     db = SessionLocal()
@@ -64,6 +74,7 @@ def run_batch_predictions():
 
         test_items = get_test_pottery_items(db, training_run.id)
 
+        items_to_predict = []
         for item in test_items:
             for task in ["classification", "regression"]:
                 exists = (
@@ -80,7 +91,13 @@ def run_batch_predictions():
                 if exists:
                     continue
 
-                create_prediction_for_item(db, item, task)
+                items_to_predict.append((item, task))
+
+        num_of_predictions = len(items_to_predict)
+        for prediction_idx, (item, task) in enumerate(items_to_predict):
+            timestamp = get_spread_timestamp(DATE_CHRONOLOGY_PREDICTIONS, WINDOW_CHRONOLOGY_PREDICTIONS, prediction_idx,
+                                             num_of_predictions)
+            create_prediction_for_item(db, item, task, timestamp)
 
         db.commit()
         print("✅ Test set predictions created")

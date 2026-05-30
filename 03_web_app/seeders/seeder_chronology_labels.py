@@ -1,5 +1,5 @@
 from models import PotteryItem, HistoricalPeriod, ChronologyLabel
-from seeders.config import PATH_DATA
+from seeders.config import PATH_DATA, DATE_CHRONOLOGY_LABELS
 from seeders.utils import load_data, print_status
 
 
@@ -37,6 +37,9 @@ def seed_chronology_labels(db):
             "end_year": row["EndYear"],
             "midpoint_year": row["MidpointYear"],
             "year_range": row["YearRange"],
+
+            "created_at": DATE_CHRONOLOGY_LABELS,
+            "updated_at": DATE_CHRONOLOGY_LABELS,
         })
 
     db.bulk_insert_mappings(ChronologyLabel, items)

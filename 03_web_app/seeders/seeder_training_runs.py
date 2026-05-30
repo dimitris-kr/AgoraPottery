@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 from models import PotteryItem, HistoricalPeriod, ChronologyLabel, TrainingRun, PotteryItemInTrainingRun
-from seeders.config import PATH_DATA, TRAIN_SPLIT, STRATIFY_COLUMN, RANDOM_STATE, TEST_SPLIT, VAL_SPLIT
+from seeders.config import PATH_DATA, TRAIN_SPLIT, STRATIFY_COLUMN, RANDOM_STATE, TEST_SPLIT, VAL_SPLIT, DATE_TRAINING_RUNS_V1
 from seeders.utils import load_data, print_status
 
 def seed_training_runs(db):
@@ -21,7 +21,9 @@ def seed_training_runs(db):
         training_run = TrainingRun(
             split_strategy=f"{TRAIN_SPLIT}-{VAL_SPLIT}-{TEST_SPLIT}",
             random_state=RANDOM_STATE,
-            is_current=True
+            is_current=True,
+            created_at=DATE_TRAINING_RUNS_V1,
+            updated_at=DATE_TRAINING_RUNS_V1,
         )
         db.add(training_run)
         db.flush()  # get training_run.id

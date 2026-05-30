@@ -1,10 +1,8 @@
 import pandas as pd
-from sqlalchemy.orm import Session
 
-from database import SessionLocal
 from models import PotteryItem, DataSource
-from seeders.config import PATH_DATA
-from seeders.utils import load_data, print_status
+from seeders.config import PATH_DATA, DATE_POTTERY_ITEMS, WINDOW_POTTERY_ITEMS
+from seeders.utils import load_data, print_status, get_spread_timestamp
 
 
 def seed_pottery_items(db):
@@ -31,6 +29,14 @@ def seed_pottery_items(db):
             "description": row["FullText"] if not pd.isna(row['FullText']) else None,
             "image_path": row["ImageFilename"] if not pd.isna(row['ImageFilename']) else None
         })
+
+    # Spread created_at evenly across a time window on the import day, so list
+    # views sort naturally instead of tying on one identical timestamp.
+    num_of_items = len(items)
+    for item_idx, item in enumerate(items):
+        timestamp = get_spread_timestamp(DATE_POTTERY_ITEMS, WINDOW_POTTERY_ITEMS, item_idx, num_of_items)
+        item["created_at"] = timestamp
+        item["updated_at"] = timestamp
 
     db.bulk_insert_mappings(PotteryItem, items)
 
