@@ -27,7 +27,8 @@ def seed_pottery_items(db):
             "data_source_id": source.id,
             "object_id": row["Id"] if not pd.isna(row['Id']) else None,
             "description": row["FullText"] if not pd.isna(row['FullText']) else None,
-            "image_path": row["ImageFilename"] if not pd.isna(row['ImageFilename']) else None
+            "image_path": f"images/{row['ImageFilename']}" if not pd.isna(row['ImageFilename']) else None,
+            # Original-dataset images live under "images/" in the HF repo
         })
 
     # Spread created_at evenly across a time window on the import day, so list

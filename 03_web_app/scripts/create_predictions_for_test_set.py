@@ -35,14 +35,14 @@ def create_prediction_for_item(db, item, task, timestamp):
     text = item.description
     image_repo_path = item.image_path
 
-    # Determine Feature Types and Model
-    feature_types = get_feature_types(text, image_repo_path)
-    db_model, db_model_version = select_model(db, task, feature_types)
-
     try:
         image_tmp_path = download_image_tmp(image_repo_path) if image_repo_path else None
     except Exception:
         image_tmp_path = None
+
+    # Determine Feature Types and Model
+    feature_types = get_feature_types(text, image_tmp_path)
+    db_model, db_model_version = select_model(db, task, feature_types)
 
     # Extract Features
     features = extract_features(db, feature_types, text, image_tmp_path)
