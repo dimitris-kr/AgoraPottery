@@ -1,0 +1,27 @@
+# Keep the build context small and keep secrets/junk out of the image.
+
+# Secrets — IMPORTANT
+.env
+.env.*
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+
+# Local scratch
+tmp/
+.cache/
+
+# Dev tooling
+.idea/
+.git/
+.gitignore
+
+# Independant scripts not needed at runtime on HF Space
+## Local Scripts (generators and tests of services etc)
+scripts/
+## Seeders (run manually to fill DB with initial data)
+seeders/
+## Uploaders (run manually to upload initial artifacts on HF Datasets and Models)
+uploaders/

@@ -1,0 +1,33 @@
+# Python deps for the FastAPI backend, used in HF Spaces Docker container.
+# Versions match the local conda env (environment.yml).
+#
+# Special Case: torch is installed separately in the Dockerfile from the CPU wheel index,
+
+# --- Web framework ---
+fastapi==0.118.2
+uvicorn[standard]==0.37.0
+pydantic==2.11.10
+requests==2.32.3
+
+# --- Database ---
+sqlalchemy==2.0.43
+psycopg2-binary==2.9.9      # with bundled libpq
+alembic==1.16.5
+
+# --- Auth / forms ---
+python-jose[cryptography]==3.5.0
+bcrypt==5.0.0
+python-multipart==0.0.20
+python-dotenv==1.1.1
+email-validator==2.3.0
+
+# --- ML / inference ---
+huggingface_hub==0.24.6
+transformers==4.45.2
+scikit-learn==1.6.1
+joblib==1.4.2
+numpy==2.2.4
+Pillow==11.1.0
+
+# --- Serverless GPU Platform for the retrain pipeline ---
+modal==1.4.2
