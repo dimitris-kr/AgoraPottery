@@ -39,12 +39,12 @@ Deploy to Hugging Face Space with GIT:
 
 - Run once:
   Add new remote to local repo named "hf":
-  >> git remote add hf <hf-space-repo-url>
+  >> git remote add hf-space <hf-space-repo-url>
 
 - Run every time to deploy to HF Space Repo (after having run >> git commit + >> git push origin main # → GitHub)
   1. Create a temporary branch in the repo named "hf-deploy" where 03_wb_app is the root
      >> git subtree split --prefix 03_web_app -b hf-deploy
   2. Push temp branch to remote HF Space Repo
-     >> git push hf hf-deploy:main --force
+     >> git push hf-space hf-deploy:main --force
   3. Delete temp branch
      >> git branch -D hf-deploy
