@@ -1,14 +1,23 @@
+import os
+
 from models.User import User
 from seeders.config import DATE_USERS
 from seeders.utils import print_status
 from services import hash_password
 
 def seed_users(db):
-    """Creates an admin user if not already existing."""
+    """Creates an admin user if not already existing.
+
+    Credentials come from .env file - no hardcoded password in this seeder
+    """
+
+    password = os.getenv("ADMIN_PASSWORD")
+    if not password:
+        raise RuntimeError("ADMIN_PASSWORD is not set in the environment (.env)")
 
     fields = {
-        "username": "admin",
-        "password": "agor@p0ttery25!",
+        "username": os.getenv("ADMIN_USERNAME", "admin"),
+        "password": password,
 
         "created_at": DATE_USERS,
         "updated_at": DATE_USERS,

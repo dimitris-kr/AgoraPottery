@@ -71,15 +71,15 @@ def create_prediction_for_item(db, item, task, timestamp):
     db.add(prediction_record)
     db.flush()
 
-    if image_tmp_path:
-        image_tmp_path.unlink()
-
     # Count
-    count_key = (get_input_type(text, image_repo_path), db_model.name, db_model_version.version)
+    count_key = (get_input_type(text, image_tmp_path), db_model.name, db_model_version.version)
     if count_key in prediction_count[task]:
         prediction_count[task][count_key] += 1
     else:
         prediction_count[task][count_key] = 1
+
+    if image_tmp_path:
+        image_tmp_path.unlink()
 
 
 def run_batch_predictions():
