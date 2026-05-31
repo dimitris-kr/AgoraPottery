@@ -11,7 +11,7 @@ from services import auth_dependency
 # Create tables if not exist
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Agora Pottery Chronology API")
+app = FastAPI(title="Pottery Chronology Predictor API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,7 +28,8 @@ app.include_router(router)
 
 
 @app.get("/")
-def root(user: auth_dependency):
-    if not user:
-        raise HTTPException(status_code=401, detail="Authentication failed.")
-    return {"message": "Welcome to the Pottery Chronology API", "user": user}
+def root():
+    return {
+        "status": "success",
+        "message": "Welcome to the Pottery Chronology Predictor API"
+    }
