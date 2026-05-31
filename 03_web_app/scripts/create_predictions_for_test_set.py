@@ -5,6 +5,8 @@ from seeders.utils import get_spread_timestamp
 from services import get_feature_types, select_model, download_image_tmp, extract_features, load_model, \
     load_target_decoder, predict_single, create_prediction_record
 
+TASKS = ["classification", "regression"]
+prediction_count = {task:{} for task in TASKS}
 
 def get_current_training_run(db):
     return db.query(TrainingRun).filter_by(is_current=True).one_or_none()
@@ -21,6 +23,13 @@ def get_test_pottery_items(db, training_run_id):
         .all()
     )
 
+def get_input_type(text, image):
+    input_types = []
+    if text:
+        input_types.append("text")
+    if image:
+        input_types.append("image")
+    return "+".join(input_types)
 
 def create_prediction_for_item(db, item, task, timestamp):
     text = item.description
@@ -65,18 +74,26 @@ def create_prediction_for_item(db, item, task, timestamp):
     if image_tmp_path:
         image_tmp_path.unlink()
 
+    # Count
+    count_key = (get_input_type(text, image_repo_path), db_model.name, db_model_version.version)
+    if count_key in prediction_count[task]:
+        prediction_count[task][count_key] += 1
+    else:
+        prediction_count[task][count_key] = 1
+
 
 def run_batch_predictions():
     db = SessionLocal()
 
     try:
+        print("✨ Starting creating test set predictions...")
         training_run = get_current_training_run(db)
 
         test_items = get_test_pottery_items(db, training_run.id)
 
         items_to_predict = []
         for item in test_items:
-            for task in ["classification", "regression"]:
+            for task in TASKS:
                 exists = (
                     db.query(ChronologyPrediction)
                     .filter_by(
@@ -100,10 +117,18 @@ def run_batch_predictions():
             create_prediction_for_item(db, item, task, timestamp)
 
         db.commit()
-        print("✅ Test set predictions created")
 
-    except Exception as e:
+        print("✅ Test set predictions created:")
+        print(f"    {num_of_predictions} total predictions:")
+        for task in TASKS:
+            print(f"        {sum(prediction_count[task].values())} {task} predictions:")
+            for key, count in prediction_count[task].items():
+                print(f"            {count} predictions with input: {key[0]} and model: {key[1]} {key[2]}")
+
+
+    except Exception as error:
         db.rollback()
+        print("⛔ Error during prediction creation: ", error)
         raise
     finally:
         db.close()
