@@ -7,6 +7,7 @@ from services import authenticate_user, create_access_token, TOKEN_EXPIRATION, c
     auth_dependency
 from database import db_dependency
 from datetime import timedelta
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -27,15 +28,17 @@ def login(
         "token_type": "bearer"
     }
 
+class NewPasswordSchema(BaseModel):
+    current_password: str
+    new_password: str
 
 @router.post("/change-password")
 def change_password(
         db: db_dependency,
         user: auth_dependency,
 
-        current_password: str,
-        new_password: str,
+        payload: NewPasswordSchema,
 ):
     """Change the logged-in user's password, after verifying current password."""
-    change_password_in_users_table(db, user["id"], current_password, new_password)
+    change_password_in_users_table(db, user["id"], payload.current_password, payload.new_password)
     return {"message": "Password changed successfully. You can log in with your new password."}
