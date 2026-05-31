@@ -8,7 +8,7 @@ from models import TrainingRun, PotteryItemInTrainingRun
 
 
 def print_status(table_name, counter):
-    status = "✅" if counter > 0 else "❎"
+    status = "✓" if counter > 0 else "x"
     adding = f"adding {counter}" if counter > 0 else "no additions"
     print(f"{status} {table_name}: {adding}")
 

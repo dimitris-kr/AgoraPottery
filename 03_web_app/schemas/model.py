@@ -18,7 +18,6 @@ class TargetSchema(BaseModel):
 
     class Config:
         from_attributes = True
-        orm_mode = True
 
 
 class FeatureSetSchema(BaseModel):
@@ -29,7 +28,6 @@ class FeatureSetSchema(BaseModel):
 
     class Config:
         from_attributes = True
-        orm_mode = True
 
 
 class ModelSchema(BaseModel):

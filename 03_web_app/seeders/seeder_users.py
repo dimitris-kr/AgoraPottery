@@ -1,5 +1,6 @@
 from models.User import User
 from seeders.config import DATE_USERS
+from seeders.utils import print_status
 from services import hash_password
 
 def seed_users(db):
@@ -29,4 +30,4 @@ def seed_users(db):
     # Insert to DB
     db.add(user)
 
-    print(f"✅ users: adding 1 ")
+    print_status('users', 1)

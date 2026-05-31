@@ -16,20 +16,29 @@ if __name__ == "__main__":
     db = SessionLocal()
 
     try:
+        # Flush after each seeder to make newly added rows available to the next seeders,
+        # while keeping single commit at the end
+
         seed_users(db)
+        db.flush()
 
         seed_data_sources(db)
         seed_historical_periods(db)
-
         seed_tasks(db)
         seed_targets(db)
+        db.flush()
 
         seed_pottery_items(db)
+        db.flush()
+
         seed_chronology_labels(db)
+        db.flush()
 
         seed_training_runs(db)
+        db.flush()
 
         seed_feature_sets(db)
+        db.flush()
 
         seed_models(db)
 
