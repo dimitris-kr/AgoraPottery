@@ -34,6 +34,17 @@ def authenticate_user(db: Session, username: str, password: str):
         return None
     return user
 
+def change_password_in_users_table(db: Session, user_id: int, current_password: str, new_password: str):
+    """Verify the current password, then set a new one."""
+    user = db.query(User).get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if not verify_password(current_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    user.hashed_password = hash_password(new_password)
+    db.commit()
 
 def create_access_token(username: str, user_id: int, expires_delta: timedelta = timedelta(minutes=TOKEN_EXPIRATION)):
     expire = datetime.now(timezone.utc) + expires_delta
