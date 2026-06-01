@@ -108,7 +108,7 @@ def main():
         f"\n✅ Done: {len(to_add)} new, {len(to_overwrite)} changed, "
         f"{len(to_delete)} deleted."
     )
-    print(f"   To deploy, inside `{DST}`:\n`git add -A`, review `git status`, commit, push.")
+    print(f"   To deploy, inside `{DST}`:\n`   git add -A`, review `git status`, commit, push.")
 
 
 if __name__ == "__main__":
