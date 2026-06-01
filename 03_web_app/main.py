@@ -16,7 +16,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(title="Pottery Chronology Predictor API")
 
 # CORS: allow requests from FRONTEND_ORIGINS HF Space variable
-# a comma-separated list, e.g. "https://dimitriskr.github.io" (ORIGIN only, no path)
+# a comma-separated list, e.g. "https://dimitris-kr.github.io" (ORIGIN only, no path)
 # Falls back to the local dev origins so `ng serve` keeps working locally.
 _default_origins = "http://localhost:4200,http://127.0.0.1:4200"
 allowed_origins = [
