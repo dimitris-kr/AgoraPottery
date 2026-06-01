@@ -6,54 +6,66 @@ from huggingface_hub import hf_hub_download, upload_file, HfApi
 
 from services import generate_image_path
 
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_IMAGE_REPO = os.getenv("HF_IMAGE_REPO")
+
+HF_DATASET_BASE = "https://huggingface.co/datasets"
+HF_REVISION = "main"
+
 
 def download_tfidf_vectorizer(repo_id, version):
     return hf_hub_download(
         repo_id=repo_id,
         repo_type="dataset",
-        filename=f"{version}/tfidf_vectorizer.joblib"
+        filename=f"{version}/tfidf_vectorizer.joblib",
+        token=HF_TOKEN,
     )
+
 
 def download_model(repo_id, version):
     return hf_hub_download(
         repo_id=repo_id,
         filename=f"{version}/model.pt",
-        repo_type="model"
+        repo_type="model",
+        token=HF_TOKEN,
     )
+
 
 def download_model_config(repo_id, version):
     return hf_hub_download(
         repo_id=repo_id,
         filename=f"{version}/config.json",
-        repo_type="model"
+        repo_type="model",
+        token=HF_TOKEN,
     )
+
 
 def download_model_metadata(repo_id, version):
     return hf_hub_download(
         repo_id=repo_id,
         filename=f"{version}/metadata.json",
-        repo_type="model"
+        repo_type="model",
+        token=HF_TOKEN,
     )
+
 
 def download_y_encoder(repo_id, version):
     return hf_hub_download(
         repo_id=repo_id,
         filename=f"{version}/y_encoder.pkl",
-        repo_type="model"
+        repo_type="model",
+        token=HF_TOKEN,
     )
+
 
 def download_y_scaler(repo_id, version):
     return hf_hub_download(
         repo_id=repo_id,
         filename=f"{version}/y_scaler.pkl",
-        repo_type="model"
+        repo_type="model",
+        token=HF_TOKEN,
     )
 
-
-HF_IMAGE_REPO = os.getenv("HF_IMAGE_REPO")
-
-HF_DATASET_BASE = "https://huggingface.co/datasets"
-HF_REVISION = "main"
 
 def upload_prediction_image(image_tmp_path: Path) -> str:
     path_in_repo = generate_image_path(image_tmp_path.suffix, root="predictions")
@@ -63,6 +75,7 @@ def upload_prediction_image(image_tmp_path: Path) -> str:
         repo_id=HF_IMAGE_REPO,
         path_in_repo=path_in_repo,
         repo_type="dataset",
+        token=HF_TOKEN,
     )
 
     return path_in_repo
@@ -72,7 +85,7 @@ def delete_prediction_image(path_in_repo: str | None):
     if not path_in_repo:
         return
 
-    api = HfApi()
+    api = HfApi(token=HF_TOKEN)
     api.delete_file(
         repo_id=HF_IMAGE_REPO,
         repo_type="dataset",
@@ -80,20 +93,24 @@ def delete_prediction_image(path_in_repo: str | None):
         commit_message=f"Delete prediction image {path_in_repo}",
     )
 
+
 TMP_DIR = Path("./tmp")
 TMP_DIR.mkdir(exist_ok=True)
+
 
 def download_image_tmp(hf_path: str) -> Path:
     local_path = hf_hub_download(
         repo_id=HF_IMAGE_REPO,
         filename=hf_path,
-        repo_type="dataset"
+        repo_type="dataset",
+        token=HF_TOKEN,
     )
 
     tmp_path = TMP_DIR / Path(hf_path).name
     shutil.copy(local_path, tmp_path)
 
     return tmp_path
+
 
 def hf_image_url(path_in_repo: str | None) -> str | None:
     if not path_in_repo:
