@@ -61,7 +61,7 @@ def main():
     if SRC.resolve() == DST.resolve():
         sys.exit("❌ SRC and DST are the same folder!")
 
-    print(f"🔄 Sync   {SRC}\n   →   {DST}")
+    print(f"🔄 Sync:\n   {SRC}\n   ↓\n   {DST}")
 
     src_files = deployable_files(SRC)
     dst_files = deployable_files(DST)
@@ -82,13 +82,13 @@ def main():
     def show(title, items):
         if not bool(items): return
 
-        print(f"\n{title} ({len(items)} files):")
+        print(f"\n{title} ({len(items)} file{'s' if len(items) > 1 else ''}):")
         for file_rel_path in items:
-            print(f"        {file_rel_path.as_posix()}")
+            print(f"      {file_rel_path.as_posix()}")
 
-    show("🟢 NEW (will be created)", to_add)
-    show("🔵 CHANGED (will be overwritten)", to_overwrite)
-    show("🔴 STALE (will be DELETED from the clone)", to_delete)
+    show("🔹 NEW (will be created)", to_add)
+    show("🔸 CHANGED (will be overwritten)", to_overwrite)
+    show("🔻 STALE (will be DELETED from the clone)", to_delete)
 
     # ── Confirm ──
     if input("\nApply these changes? [y/N] ").strip().lower() != "y":
