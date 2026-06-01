@@ -29,7 +29,8 @@ EXCLUDE_DIRS = {
 }
 
 # Files left untouched in DST (the clone's own config — must NOT be deleted!).
-EXCLUDE_FILES = {".env", ".gitignore", ".gitattributes"}
+# Files not copied from SRC: local dev-only files
+EXCLUDE_FILES = {".env", ".gitignore", ".gitattributes", "environment.yml", "README.txt"}
 EXCLUDE_SUFFIXES = {".pyc", ".pyo"}
 
 

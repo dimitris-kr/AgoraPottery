@@ -37,10 +37,5 @@ uvicorn main:app --reload
 
 Deploy to Hugging Face Space with GIT:
 
-- Run once:
-  Add new remote to local repo named "hf":
-  >> git remote add hf-space <hf-space-repo-url>
-
-- Run every time to deploy to HF Space Repo (after having run >> git commit + >> git push to GitHub)
-  >> deploy_web_app.bat
-  batch file contains all necessary git commands to deply the web app
+Copy files to HF Space Repo from original
+deploy_sync.py: script that copies only necessary files + reports files to be created/overwritten/deleted in the clone repo based on changes in the source and asks for confirmation before applying changes to clone.
