@@ -17,6 +17,9 @@ engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
     pool_recycle=300,
+    # Default 5+10 was too small. 20 + 30 = 50 max: safe on Neon's POOLED endpoint.
+    pool_size=20,
+    max_overflow=30,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
