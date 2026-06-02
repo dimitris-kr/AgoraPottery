@@ -4,3 +4,4 @@ __pycache__/
 .env
 *.pyc
 03_web_app/uploaders/ml_models/
+tmp/
