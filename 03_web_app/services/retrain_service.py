@@ -37,7 +37,6 @@ TRAIN_SPLIT = 0.90
 VAL_SPLIT = 0.10
 # NO TEST_SPLIT
 RANDOM_STATE = 42
-STRATIFY_COL = "historical_period"
 
 HF_IMAGE_REPO = os.getenv("HF_IMAGE_REPO")
 HF_TFIDF_REPO = os.getenv("HF_TFIDF_REPO")
@@ -157,7 +156,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
         {TrainingRun.is_current: False}
     )
     new_run = TrainingRun(
-        split_strategy=f"{TRAIN_SPLIT}-{VAL_SPLIT}",
+        split_strategy=f"{TRAIN_SPLIT}-{VAL_SPLIT}-0",
         random_state=RANDOM_STATE,
         is_current=False,  # set True in webhook after training succeeds
     )
@@ -177,7 +176,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     # ── 7. Build item payloads for Modal ──
     items_by_split = {"train": [], "val": []}
     for item in all_items:
-        split = split_map[item.id]  # every item is train or val — no test
+        split = split_map[item.id]
         label = item.chronology_label
         items_by_split[split].append({
             "pottery_item_id": item.id,
@@ -206,8 +205,8 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     }
 
     # ── 10. Spawn Modal job ──
-    # job_id = _spawn_modal_job(modal_payload)
-    job_id = "local-test-fake-job-id"
+    job_id = _spawn_modal_job(modal_payload)
+    # job_id = "local-test-fake-job-id" # Fake job for local testing
 
     return RetrainStartedSchema(
         job_id=job_id,
