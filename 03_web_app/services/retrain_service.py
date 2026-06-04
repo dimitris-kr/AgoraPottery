@@ -266,13 +266,24 @@ def _spawn_modal_job(payload: dict) -> str:
     Spawn the Modal training function asynchronously.
     Returns the Modal call ID (used as job_id for status polling).
     """
+    import time
+    import json
+
+    payload_mb = len(json.dumps(payload).encode()) / 1e6
+
     try:
         import modal
         # Import the deployed Modal function.
         # The app name must match what's in Modal/modal_app.py:
-        #   app = modal.App("agora-pottery-retrain")
+        t = time.perf_counter()
         TrainingFunction = modal.Function.from_name("agora-pottery-retrain", "run_training")
+        print(f"[retrain] from_name took {time.perf_counter() - t:.1f}s", flush=True)
+
+        t = time.perf_counter()
         call = TrainingFunction.spawn(payload)
+        print(f"[retrain] spawn took {time.perf_counter() - t:.1f}s "
+              f"(payload {payload_mb:.2f} MB)", flush=True)
+
         return call.object_id
     except Exception as e:
         raise HTTPException(
