@@ -94,6 +94,10 @@ def get_eligibility(db: Session) -> EligibilitySchema:
 # RETRAIN
 # ──────────────────────────────────────────────
 
+def current():
+    t = time.localtime()
+    return time.strftime("%H:%M:%S", t)
+
 def trigger_retrain(db: Session) -> RetrainStartedSchema:
     """
     Main entry point called by the /retrain endpoint.
@@ -112,7 +116,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
             status_code=409,
             detail="No new validated items since the last training run. Retraining not needed.",
         )
-    print(f"[retrain] Eligibility: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current()}][retrain] Eligibility: {time.perf_counter() - t:.1f}s", flush=True)
 
     if not WEBHOOK_URL:
         raise HTTPException(
@@ -128,7 +132,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
         .join(ChronologyLabel.historical_period)
         .all()
     )
-    print(f"[retrain] Fetch all items: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current()}][retrain] Fetch all items: {time.perf_counter() - t:.1f}s", flush=True)
 
     # ── 3. Build stratified train/val split ──
     # No test split: in production retraining, real predictions with user
@@ -153,7 +157,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     for i in idx_train: split_map[item_ids[i]] = "train"
     for i in idx_val:   split_map[item_ids[i]] = "val"
 
-    print(f"[retrain] train/val split: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current()}][retrain] train/val split: {time.perf_counter() - t:.1f}s", flush=True)
 
     # ── 4. Determine new version string ──
     prev_version = _get_current_model_version_string(db)
@@ -172,7 +176,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     db.add(new_run)
     db.flush()
 
-    print(f"[retrain] Create new TrainingRun: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current()}][retrain] Create new TrainingRun: {time.perf_counter() - t:.1f}s", flush=True)
 
 
     # ── 6. Create PotteryItemInTrainingRun records ──
@@ -186,7 +190,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     )
     db.commit()
 
-    print(f"[retrain] Create PotteryItemInTrainingRun records: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current()}][retrain] Create PotteryItemInTrainingRun records: {time.perf_counter() - t:.1f}s", flush=True)
 
 
     # ── 7. Build item payloads for Modal ──
@@ -204,13 +208,13 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
             "year_range": label.year_range,
         })
 
-    print(f"[retrain] Build item payloads: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current()}][retrain] Build item payloads: {time.perf_counter() - t:.1f}s", flush=True)
 
 
     # ── 8. Collect model configs from DB ──
     t = time.perf_counter()
     model_configs = build_model_configs(db)
-    print(f"[retrain] Get model configs from DB: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current()}][retrain] Get model configs from DB: {time.perf_counter() - t:.1f}s", flush=True)
 
 
     # ── 9. Build full Modal payload ──
@@ -227,7 +231,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
         "models": model_configs,
         "webhook_url": WEBHOOK_URL,
     }
-    print(f"[retrain] Build full payload: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current()}][retrain] Build full payload: {time.perf_counter() - t:.1f}s", flush=True)
 
 
     # ── 10. Spawn Modal job ──
@@ -303,11 +307,11 @@ def _spawn_modal_job(payload: dict) -> str:
         # The app name must match what's in Modal/modal_app.py:
         t = time.perf_counter()
         TrainingFunction = modal.Function.from_name("agora-pottery-retrain", "run_training")
-        print(f"[retrain] from_name: {time.perf_counter() - t:.1f}s", flush=True)
+        print(f"[{current()}][retrain] from_name: {time.perf_counter() - t:.1f}s", flush=True)
 
         t = time.perf_counter()
         call = TrainingFunction.spawn(payload)
-        print(f"[retrain] spawn: {time.perf_counter() - t:.1f}s "
+        print(f"[{current()}][retrain] spawn: {time.perf_counter() - t:.1f}s "
               f"(payload {payload_mb:.2f} MB)", flush=True)
 
         return call.object_id
