@@ -19,13 +19,15 @@ from Modal.retrain import run_training as _run_training_body
 
 app = modal.App("agora-pottery-retrain")
 
-
-def _bake_vit():
-    """Pre-download the ViT model at image-BUILD time so it's baked into the
-    image. Then every cold container finds it cached → no delay during runtime."""
-    from transformers import ViTImageProcessor, ViTModel
-    ViTImageProcessor.from_pretrained("google/vit-base-patch16-224-in21k")
-    ViTModel.from_pretrained("google/vit-base-patch16-224-in21k")
+# Command that pre-downloads the ViT weights at image-BUILD time
+# Baked into the image → cold containers skip download during.
+_DOWNLOAD_VIT_CMD = (
+    'python -c "'
+    'from transformers import ViTImageProcessor, ViTModel; '
+    "ViTImageProcessor.from_pretrained('google/vit-base-patch16-224-in21k'); "
+    "ViTModel.from_pretrained('google/vit-base-patch16-224-in21k')"
+    '"'
+)
 
 # Library versions pinned to match the local conda env (environment.yml).
 #
@@ -47,9 +49,8 @@ image = (
         "requests==2.32.3",
         "Pillow==11.1.0",
     )
-    # Bake the ViT weights into the image during build.
-    # Must come after pip_install (needs transformers) and before add_local_python_source.
-    .run_function(_bake_vit)
+    # Bake ViT into the image (after pip_install so transformers is available).
+    .run_commands(_DOWNLOAD_VIT_CMD)
     .add_local_python_source("Modal", "ML")
 )
 
