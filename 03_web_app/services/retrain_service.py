@@ -13,6 +13,7 @@ Responsibilities:
 """
 import os
 import secrets as _stdlib_secrets
+import time
 
 import numpy as np
 from fastapi import HTTPException, Header
@@ -104,12 +105,14 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     6. Return job info
     """
     # ── 1. Eligibility ──
+    t = time.perf_counter()
     eligibility = get_eligibility(db)
     if not eligibility.eligible:
         raise HTTPException(
             status_code=409,
             detail="No new validated items since the last training run. Retraining not needed.",
         )
+    print(f"[retrain] Eligibility: {time.perf_counter() - t:.1f}s", flush=True)
 
     if not WEBHOOK_URL:
         raise HTTPException(
@@ -118,17 +121,20 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
         )
 
     # ── 2. Fetch all items that have a chronology label ──
+    t = time.perf_counter()
     all_items = (
         db.query(PotteryItem)
         .join(PotteryItem.chronology_label)
         .join(ChronologyLabel.historical_period)
         .all()
     )
+    print(f"[retrain] Fetch all items: {time.perf_counter() - t:.1f}s", flush=True)
 
     # ── 3. Build stratified train/val split ──
     # No test split: in production retraining, real predictions with user
     # feedback serve as the effective test set. Every labelled sample should
     # contribute to training.
+    t = time.perf_counter()
     item_ids = [item.id for item in all_items]
     strat_labels = [item.chronology_label.historical_period.name for item in all_items]
 
@@ -147,11 +153,14 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     for i in idx_train: split_map[item_ids[i]] = "train"
     for i in idx_val:   split_map[item_ids[i]] = "val"
 
+    print(f"[retrain] train/val split: {time.perf_counter() - t:.1f}s", flush=True)
+
     # ── 4. Determine new version string ──
     prev_version = _get_current_model_version_string(db)
     new_version = _bump_version(prev_version)
 
     # ── 5. Create new TrainingRun (not yet current — becomes current after webhook) ──
+    t = time.perf_counter()
     db.query(TrainingRun).filter(TrainingRun.is_current == True).update(
         {TrainingRun.is_current: False}
     )
@@ -163,7 +172,11 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     db.add(new_run)
     db.flush()
 
+    print(f"[retrain] Create new TrainingRun: {time.perf_counter() - t:.1f}s", flush=True)
+
+
     # ── 6. Create PotteryItemInTrainingRun records ──
+    t = time.perf_counter()
     db.bulk_insert_mappings(
         PotteryItemInTrainingRun,
         [
@@ -173,7 +186,11 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     )
     db.commit()
 
+    print(f"[retrain] Create PotteryItemInTrainingRun records: {time.perf_counter() - t:.1f}s", flush=True)
+
+
     # ── 7. Build item payloads for Modal ──
+    t = time.perf_counter()
     items_by_split = {"train": [], "val": []}
     for item in all_items:
         split = split_map[item.id]
@@ -187,10 +204,17 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
             "year_range": label.year_range,
         })
 
+    print(f"[retrain] Build item payloads: {time.perf_counter() - t:.1f}s", flush=True)
+
+
     # ── 8. Collect model configs from DB ──
+    t = time.perf_counter()
     model_configs = build_model_configs(db)
+    print(f"[retrain] Get model configs from DB: {time.perf_counter() - t:.1f}s", flush=True)
+
 
     # ── 9. Build full Modal payload ──
+    t = time.perf_counter()
     modal_payload = {
         "items_train": items_by_split["train"],
         "items_val": items_by_split["val"],
@@ -203,6 +227,8 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
         "models": model_configs,
         "webhook_url": WEBHOOK_URL,
     }
+    print(f"[retrain] Build full payload: {time.perf_counter() - t:.1f}s", flush=True)
+
 
     # ── 10. Spawn Modal job ──
     job_id = _spawn_modal_job(modal_payload)
@@ -277,11 +303,11 @@ def _spawn_modal_job(payload: dict) -> str:
         # The app name must match what's in Modal/modal_app.py:
         t = time.perf_counter()
         TrainingFunction = modal.Function.from_name("agora-pottery-retrain", "run_training")
-        print(f"[retrain] from_name took {time.perf_counter() - t:.1f}s", flush=True)
+        print(f"[retrain] from_name: {time.perf_counter() - t:.1f}s", flush=True)
 
         t = time.perf_counter()
         call = TrainingFunction.spawn(payload)
-        print(f"[retrain] spawn took {time.perf_counter() - t:.1f}s "
+        print(f"[retrain] spawn: {time.perf_counter() - t:.1f}s "
               f"(payload {payload_mb:.2f} MB)", flush=True)
 
         return call.object_id
