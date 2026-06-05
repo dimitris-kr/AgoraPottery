@@ -68,7 +68,7 @@ def count_new_validated_items(db: Session) -> int:
             PotteryItemInTrainingRun.training_run_id == current_run.id,
             PotteryItemInTrainingRun.split.in_(["train", "val"]),
         )
-        .subquery()
+        .scalar_subquery()
     )
 
     # Items with a chronology label that are NOT in the current run
