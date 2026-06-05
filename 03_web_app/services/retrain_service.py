@@ -18,7 +18,7 @@ import time
 import numpy as np
 from fastapi import HTTPException, Header
 from sklearn.model_selection import train_test_split
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 
 from models import (
     PotteryItemInTrainingRun, PotteryItem, ModelVersion, Model, ChronologyLabel,
@@ -94,7 +94,7 @@ def get_eligibility(db: Session) -> EligibilitySchema:
 # RETRAIN
 # ──────────────────────────────────────────────
 
-def current():
+def current_time():
     t = time.localtime()
     return time.strftime("%H:%M:%S", t)
 
@@ -116,7 +116,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
             status_code=409,
             detail="No new validated items since the last training run. Retraining not needed.",
         )
-    print(f"[{current()}][retrain] Eligibility: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current_time()}][retrain] Eligibility: {time.perf_counter() - t:.1f}s", flush=True)
 
     if not WEBHOOK_URL:
         raise HTTPException(
@@ -124,23 +124,44 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
             detail="WEBHOOK_URL environment variable is not set.",
         )
 
-    # ── 2. Fetch all items that have a chronology label ──
+    # ── 2. Fetch all items that have a chronology label
+    #       EAGER-load their label + period in ONE query
+    #       contains_eager pre-populates relationship attributes and avoids separate queries PER ITEM (N+1)
     t = time.perf_counter()
-    all_items = (
+    pottery_item_records = (
         db.query(PotteryItem)
         .join(PotteryItem.chronology_label)
         .join(ChronologyLabel.historical_period)
+        .options(
+            contains_eager(PotteryItem.chronology_label)
+            .contains_eager(ChronologyLabel.historical_period)
+        )
         .all()
     )
-    print(f"[{current()}][retrain] Fetch all items: {time.perf_counter() - t:.1f}s", flush=True)
 
-    # ── 3. Build stratified train/val split ──
+    # Extract necessary fields into plain dicts NOW
+    # all data is loaded from query above
+    # must be before db commit (gets rid of loaded data then forces N+1 queries)
+    pottery_items = [
+        {
+            "pottery_item_id": item.id,
+            "description": item.description,
+            "image_path": item.image_path,
+            "historical_period": item.chronology_label.historical_period.name,
+            "start_year": item.chronology_label.start_year,
+            "year_range": item.chronology_label.year_range,
+        }
+        for item in pottery_item_records
+    ]
+    print(f"[{current_time()}][retrain] Fetch + extract items: {time.perf_counter() - t:.1f}s", flush=True)
+
+    # ── 3. Build stratified train/val split (from the plain data) ──
     # No test split: in production retraining, real predictions with user
     # feedback serve as the effective test set. Every labelled sample should
     # contribute to training.
     t = time.perf_counter()
-    item_ids = [item.id for item in all_items]
-    strat_labels = [item.chronology_label.historical_period.name for item in all_items]
+    item_ids = [item["pottery_item_id"] for item in pottery_items]
+    strat_labels = [item["historical_period"] for item in pottery_items]
 
     idx = np.arange(len(item_ids))
     try:
@@ -157,7 +178,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     for i in idx_train: split_map[item_ids[i]] = "train"
     for i in idx_val:   split_map[item_ids[i]] = "val"
 
-    print(f"[{current()}][retrain] train/val split: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current_time()}][retrain] train/val split: {time.perf_counter() - t:.1f}s", flush=True)
 
     # ── 4. Determine new version string ──
     prev_version = _get_current_model_version_string(db)
@@ -176,7 +197,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     db.add(new_run)
     db.flush()
 
-    print(f"[{current()}][retrain] Create new TrainingRun: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current_time()}][retrain] Create new TrainingRun: {time.perf_counter() - t:.1f}s", flush=True)
 
 
     # ── 6. Create PotteryItemInTrainingRun records ──
@@ -190,31 +211,22 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
     )
     db.commit()
 
-    print(f"[{current()}][retrain] Create PotteryItemInTrainingRun records: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current_time()}][retrain] Create PotteryItemInTrainingRun records: {time.perf_counter() - t:.1f}s", flush=True)
 
 
-    # ── 7. Build item payloads for Modal ──
+    # ── 7. Bucket the pre-extracted item dicts into train/val (pure in-memory) ──
     t = time.perf_counter()
     items_by_split = {"train": [], "val": []}
-    for item in all_items:
-        split = split_map[item.id]
-        label = item.chronology_label
-        items_by_split[split].append({
-            "pottery_item_id": item.id,
-            "description": item.description,
-            "image_path": item.image_path,
-            "historical_period": label.historical_period.name,
-            "start_year": label.start_year,
-            "year_range": label.year_range,
-        })
+    for item in pottery_items:
+        items_by_split[split_map[item["pottery_item_id"]]].append(item)
 
-    print(f"[{current()}][retrain] Build item payloads: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current_time()}][retrain] Bucket items per split: {time.perf_counter() - t:.1f}s", flush=True)
 
 
     # ── 8. Collect model configs from DB ──
     t = time.perf_counter()
     model_configs = build_model_configs(db)
-    print(f"[{current()}][retrain] Get model configs from DB: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current_time()}][retrain] Get model configs from DB: {time.perf_counter() - t:.1f}s", flush=True)
 
 
     # ── 9. Build full Modal payload ──
@@ -231,7 +243,7 @@ def trigger_retrain(db: Session) -> RetrainStartedSchema:
         "models": model_configs,
         "webhook_url": WEBHOOK_URL,
     }
-    print(f"[{current()}][retrain] Build full payload: {time.perf_counter() - t:.1f}s", flush=True)
+    print(f"[{current_time()}][retrain] Build full payload: {time.perf_counter() - t:.1f}s", flush=True)
 
 
     # ── 10. Spawn Modal job ──
@@ -307,11 +319,11 @@ def _spawn_modal_job(payload: dict) -> str:
         # The app name must match what's in Modal/modal_app.py:
         t = time.perf_counter()
         TrainingFunction = modal.Function.from_name("agora-pottery-retrain", "run_training")
-        print(f"[{current()}][retrain] from_name: {time.perf_counter() - t:.1f}s", flush=True)
+        print(f"[{current_time()}][retrain] from_name: {time.perf_counter() - t:.1f}s", flush=True)
 
         t = time.perf_counter()
         call = TrainingFunction.spawn(payload)
-        print(f"[{current()}][retrain] spawn: {time.perf_counter() - t:.1f}s "
+        print(f"[{current_time()}][retrain] spawn: {time.perf_counter() - t:.1f}s "
               f"(payload {payload_mb:.2f} MB)", flush=True)
 
         return call.object_id
