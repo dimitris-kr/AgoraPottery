@@ -11,6 +11,7 @@ Responsibilities:
   - Spawn the Modal job asynchronously
   - Handle the webhook callback from Modal (finalize DB state)
 """
+import math
 import os
 import secrets as _stdlib_secrets
 import time
@@ -39,6 +40,10 @@ VAL_SPLIT = 0.10
 # NO TEST_SPLIT
 RANDOM_STATE = 42
 
+# How to calculate recommended min new items in retraining eligibility.
+RECOMMENDED_MIN_NEW_ITEMS_PCT = 0.05
+RECOMMENDED_MIN_NEW_ITEMS_FLOOR = 20
+
 HF_IMAGE_REPO = os.getenv("HF_IMAGE_REPO")
 HF_TFIDF_REPO = os.getenv("HF_TFIDF_REPO")
 HF_VIT_REPO = os.getenv("HF_VIT_REPO")
@@ -51,15 +56,16 @@ WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 # ELIGIBILITY
 # ──────────────────────────────────────────────
 
-def count_new_validated_items(db: Session) -> int:
+def count_training_items(db: Session) -> tuple[int, int]:
     """
-    Count validated PotteryItems that have a ChronologyLabel
-    but are NOT in the current training run (train or val split).
-    These are the items that would be added to the next training run.
+    Count from db and return:
+    - current_training_size: PotteryItems in the current training run (train or val split).
+    - new_items_count: validated PotteryItems that have a ChronologyLabel
+      but are NOT in the current training run (items to be added to the next training run).
     """
     current_run = get_current_training_run(db)
     if not current_run:
-        return 0
+        return 0, 0
 
     # IDs already in current training run (train + val only; test excluded)
     in_current = (
@@ -68,25 +74,35 @@ def count_new_validated_items(db: Session) -> int:
             PotteryItemInTrainingRun.training_run_id == current_run.id,
             PotteryItemInTrainingRun.split.in_(["train", "val"]),
         )
-        .scalar_subquery()
     )
 
-    # Items with a chronology label that are NOT in the current run
-    count = (
+    current_training_size = in_current.count()
+
+    new_items_count = (
         db.query(PotteryItem)
         .join(PotteryItem.chronology_label)
-        .filter(PotteryItem.id.notin_(in_current))
+        .filter(PotteryItem.id.notin_(in_current.scalar_subquery()))
         .count()
     )
 
-    return count
+    return current_training_size, new_items_count
+
+
+def compute_recommended_threshold(current_training_size: int) -> int:
+    """
+    max(FLOOR, ceil(PCT * current_training_set_size)). Advisory only — the UI
+    warns below this many new items but never blocks retraining.
+    """
+    pct_based_threshold = math.ceil(RECOMMENDED_MIN_NEW_ITEMS_PCT * current_training_size)
+    return max(RECOMMENDED_MIN_NEW_ITEMS_FLOOR, pct_based_threshold)
 
 
 def get_eligibility(db: Session) -> EligibilitySchema:
-    new_items = count_new_validated_items(db)
+    current_training_size, new_items_count = count_training_items(db)
     return EligibilitySchema(
-        eligible=new_items > 0,
-        new_items_count=new_items,
+        eligible=new_items_count > 0,
+        new_items_count=new_items_count,
+        recommended_threshold=compute_recommended_threshold(current_training_size),
     )
 
 

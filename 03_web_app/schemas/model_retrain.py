@@ -10,6 +10,9 @@ from pydantic import BaseModel
 class EligibilitySchema(BaseModel):
     eligible: bool
     new_items_count: int
+    # Soft, advisory guidance of minimum new_items_count for retrain to be meaningful.
+    # Does NOT gate eligibility.
+    recommended_threshold: int
 
 
 # ──────────────────────────────────────────────
