@@ -1,7 +1,7 @@
 from typing import Optional, Literal
 
 from fastapi import APIRouter, Query
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload, contains_eager
 
 from database import db_dependency
 from models import ModelVersion, Model
@@ -80,12 +80,19 @@ async def get_model_versions(
     # Main Query
     query = (
         db.query(ModelVersion)
+
+        # SQL joins
         .join(ModelVersion.model)
         .join(Model.task)
+
+        # Eager Loading
         .options(
-            joinedload(ModelVersion.model).joinedload(Model.task),
-            joinedload(ModelVersion.model).joinedload(Model.targets),
-            joinedload(ModelVersion.model).joinedload(Model.feature_sets),
+            # model + task are already joined above → reuse those joins
+            contains_eager(ModelVersion.model).contains_eager(Model.task),
+            # targets + feature_sets are collections → load via separate IN
+            # queries to avoid a Cartesian product inside this paginated list
+            contains_eager(ModelVersion.model).selectinload(Model.targets),
+            contains_eager(ModelVersion.model).selectinload(Model.feature_sets),
         )
     )
 
@@ -141,15 +148,18 @@ async def get_model(
         user: auth_dependency,
         model_id: int,
 ):
-    model = (db.query(Model)
-             .options(
-        joinedload(Model.task),
-        joinedload(Model.targets),
-        joinedload(Model.feature_sets),
+    model = (
+        db.query(Model)
+
+        # Eager Loading
+        .options(
+            joinedload(Model.task),
+            selectinload(Model.targets),
+            selectinload(Model.feature_sets),
+        )
+        .filter_by(id=model_id)
+        .one_or_none()
     )
-             .filter_by(id=model_id)
-             .one_or_none()
-             )
 
     validate_model_exists(model)
 
@@ -165,10 +175,12 @@ async def get_single_model_versions(
     # Main Query
     query = (
         db.query(ModelVersion)
+
+        # Eager Loading
         .options(
             joinedload(ModelVersion.model).joinedload(Model.task),
-            joinedload(ModelVersion.model).joinedload(Model.targets),
-            joinedload(ModelVersion.model).joinedload(Model.feature_sets),
+            joinedload(ModelVersion.model).selectinload(Model.targets),
+            joinedload(ModelVersion.model).selectinload(Model.feature_sets),
         )
         .filter_by(model_id=model_id)
     )

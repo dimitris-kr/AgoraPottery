@@ -2,7 +2,7 @@ from typing import Optional, Literal
 
 from fastapi import APIRouter, Query
 from sqlalchemy import exists, select, func
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, contains_eager
 
 from database import db_dependency
 from models import PotteryItem, ChronologyLabel, TrainingRun, PotteryItemInTrainingRun
@@ -120,11 +120,11 @@ async def get_pottery_items(
         .join(PotteryItem.data_source, isouter=True)
         .join(PotteryItem.in_training_run, isouter=True)
 
-        # Eager loading (for response)
+        # Eager loading (reuse the joins above instead of re-joining)
         .options(
-            joinedload(PotteryItem.chronology_label)
+            contains_eager(PotteryItem.chronology_label)
             .joinedload(ChronologyLabel.historical_period),
-            joinedload(PotteryItem.data_source),
+            contains_eager(PotteryItem.data_source),
         )
     )
 

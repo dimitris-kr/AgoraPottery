@@ -2,7 +2,7 @@ from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Depends, Form, UploadFile, File, Query
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, contains_eager
 
 from database import db_dependency
 from models import ChronologyPrediction, HistoricalPeriod, ModelVersion, PotteryItem, ChronologyLabel
@@ -104,7 +104,8 @@ async def get_predictions(
     .options(
         joinedload(ChronologyPrediction.model_version).joinedload(ModelVersion.model),
         joinedload(ChronologyPrediction.historical_period),
-        joinedload(ChronologyPrediction.pottery_item).joinedload(PotteryItem.chronology_label),
+        # pottery_item + its label are already joined above → reuse those joins
+        contains_eager(ChronologyPrediction.pottery_item).contains_eager(PotteryItem.chronology_label),
     ))
 
     if input_type == "text":
