@@ -3,11 +3,11 @@ from fastapi import APIRouter, Depends
 from database import db_dependency
 from schemas import (
     EligibilitySchema, RetrainStartedSchema, RetrainFinalizedSchema,
-    WebhookPayloadSchema, JobStatusSchema,
+    WebhookPayloadSchema, JobStatusSchema, RunStatusSchema,
 )
 from services import (
     auth_dependency, trigger_retrain, verify_webhook_secret, finalize_retrain,
-    get_eligibility, get_job_status,
+    get_eligibility, get_job_status, get_run_status,
 )
 
 import os
@@ -89,3 +89,24 @@ def retrain_status(
     webhook (POST /complete) is what actually flips ModelVersion.is_current.
     """
     return get_job_status(job_id)
+
+
+# ──────────────────────────────────────────────
+# DB FINALIZATION STATUS — polled after Modal reports "success"
+# ──────────────────────────────────────────────
+
+@router.get("/run-status/{training_run_id}", response_model=RunStatusSchema)
+def retrain_run_status(
+    training_run_id: int,
+    db: db_dependency,
+    user: auth_dependency,
+):
+    """
+    Poll whether the webhook has finalized the retrain in the DB. Returns one of:
+      "finalizing" | "finalized" | "failed" | "archived"
+
+    Closes the gap between Modal "success" and the webhook promoting the new
+    ModelVersions. Keyed by the TrainingRun id returned from /trigger, which is
+    the atomic source of truth for finalization (see services.get_run_status).
+    """
+    return get_run_status(db, training_run_id)

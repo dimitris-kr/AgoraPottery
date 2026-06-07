@@ -19,6 +19,7 @@ import time
 import numpy as np
 from fastapi import HTTPException, Header
 from sklearn.model_selection import train_test_split
+from sqlalchemy import func
 from sqlalchemy.orm import Session, contains_eager
 
 from models import (
@@ -28,6 +29,7 @@ from models import (
 from schemas import (
     EligibilitySchema, RetrainStartedSchema, TrainingRunSchema,
     WebhookPayloadSchema, RetrainFinalizedSchema, JobStatusSchema,
+    RunStatusSchema,
 )
 from services import get_current_training_run
 
@@ -114,16 +116,37 @@ def current_time():
     t = time.localtime()
     return time.strftime("%H:%M:%S", t)
 
+
+def is_retrain_in_progress(db: Session) -> bool:
+    """
+    True if a retrain is already in progress.
+
+    While retraining, all TrainingRun records have is_current=False until
+    webhook resolves and newest TrainingRun's is_current flips, so
+    latest TrainingRun with is_current=False means retrain is in progress.
+    """
+    newest = db.query(TrainingRun).order_by(TrainingRun.id.desc()).first()
+    return newest is not None and not newest.is_current
+
+
 def trigger_retrain(db: Session) -> RetrainStartedSchema:
     """
     Main entry point called by the /retrain endpoint.
-    1. Validate eligibility
-    2. Build new split over ALL labelled items
-    3. Create TrainingRun + pivot records
-    4. Collect model configs from DB
-    5. Spawn Modal job
-    6. Return job info
+    1. Reject if a retrain is already in progress
+    2. Validate eligibility
+    3. Build new split over ALL labelled items
+    4. Create TrainingRun + pivot records
+    5. Collect model configs from DB
+    6. Spawn Modal job
+    7. Return job info
     """
+    # ── 0. Concurrency guard — one retrain at a time ──
+    if is_retrain_in_progress(db):
+        raise HTTPException(
+            status_code=409,
+            detail="A retraining run is already in progress. Please wait for it to finish.",
+        )
+
     # ── 1. Eligibility ──
     t = time.perf_counter()
     eligibility = get_eligibility(db)
@@ -539,7 +562,7 @@ def _cleanup_hf_version(db: Session, version: str) -> None:
 
 
 # ──────────────────────────────────────────────
-# JOB STATUS POLLING
+# MODAL JOB STATUS POLLING
 # ──────────────────────────────────────────────
 
 def get_job_status(job_id: str) -> JobStatusSchema:
@@ -572,3 +595,31 @@ def get_job_status(job_id: str) -> JobStatusSchema:
             return JobStatusSchema(status="not_found")
         # Any other exception = the Modal function raised inside the container
         return JobStatusSchema(status="failure", error=msg)
+
+
+# ──────────────────────────────────────────────
+# DB FINALIZATION STATUS POLLING
+# ──────────────────────────────────────────────
+
+def get_run_status(db: Session, training_run_id: int) -> RunStatusSchema:
+    """
+    Report whether the webhook (finalize_retrain) has finalized a retrain.
+
+    Polled by the frontend AFTER the Modal job reports "success", to close the
+    gap between "training finished" and "new version is live in the DB".
+
+      - TrainingRun missing                             → "failed"     (rollback path deleted it)
+      - TrainingRun present, is_current                 → "finalized"  (versions created + promoted)
+      - TrainingRun present, not current, is latest     → "finalizing" (webhook not processed yet)
+      - TrainingRun present, not current, not latest    → "archived"   (is old run not supposed to change)
+    """
+    run = db.get(TrainingRun, training_run_id)
+    if run is None:
+        return RunStatusSchema(status="failed")
+    if run.is_current:
+        return RunStatusSchema(status="finalized")
+
+    latest_id = db.query(func.max(TrainingRun.id)).scalar()
+    if run.id == latest_id:
+        return RunStatusSchema(status="finalizing")
+    return RunStatusSchema(status="archived")

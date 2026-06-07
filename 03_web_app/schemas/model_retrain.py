@@ -80,3 +80,11 @@ class JobStatusSchema(BaseModel):
     status: str                 # "running" | "success" | "failure" | "not_found"
     error: str | None = None
     result: dict | None = None
+
+
+# ──────────────────────────────────────────────
+# DB FINALIZATION STATUS  (post-Modal, webhook-driven)
+# ──────────────────────────────────────────────
+
+class RunStatusSchema(BaseModel):
+    status: str # "finalizing" | "finalized" | "failed" | "archived"
