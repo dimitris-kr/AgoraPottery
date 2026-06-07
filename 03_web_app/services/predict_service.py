@@ -264,3 +264,12 @@ def validate_prediction_exists(prediction: ChronologyPrediction | None):
 def validate_prediction_not_validated(prediction: ChronologyPrediction | None):
     if prediction.status == "validated":
         raise HTTPException(status_code=400, detail="Prediction already validated")
+
+
+def count_pending_predictions(db: Session) -> int:
+    """Count predictions still awaiting expert feedback (status == 'pending')."""
+    return (
+        db.query(func.count(ChronologyPrediction.id))
+        .filter(ChronologyPrediction.status == "pending")
+        .scalar()
+    )

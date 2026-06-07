@@ -67,5 +67,9 @@ class ChronologyPredictionSchema(BaseModel):
     class Config:
         from_attributes = True
 
+class PendingPredictionsSchema(BaseModel):
+    count: int
+
+
 class ConnectPredictionSchema(BaseModel):
     pottery_item_id: int

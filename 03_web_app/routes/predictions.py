@@ -7,11 +7,11 @@ from sqlalchemy.orm import joinedload, contains_eager
 from database import db_dependency
 from models import ChronologyPrediction, HistoricalPeriod, ModelVersion, PotteryItem, ChronologyLabel
 from schemas import PredictionResponse, ChronologyPredictionSchema, PaginatedResponse, ConnectPredictionSchema, \
-    PotteryItemCreateFromPredictionSchema
+    PotteryItemCreateFromPredictionSchema, PendingPredictionsSchema
 from services import auth_dependency, validate_input, get_feature_types, select_model, load_model, load_target_decoder, \
     extract_features, predict_single, upload_prediction_image, create_prediction_record, save_tmp_file, \
     delete_prediction_image, match_expression, validate_prediction_exists, validate_prediction_not_validated, \
-    get_feature_order
+    get_feature_order, count_pending_predictions
 from services.data_service import get_data_source, assign_historical_period, validate_years, validate_unique_object_id, \
     validate_item_exists
 
@@ -169,6 +169,17 @@ async def get_predictions(
         "limit": limit,
         "offset": offset,
     }
+
+
+# NOTE: must be declared before GET /{prediction_id} so the literal path
+# isn't captured by the int path param.
+@router.get("/pending", response_model=PendingPredictionsSchema)
+def get_pending_predictions_count(
+        db: db_dependency,
+        user: auth_dependency,
+):
+    """Count of predictions awaiting expert feedback (status == 'pending')."""
+    return {"count": count_pending_predictions(db)}
 
 
 @router.get("/{prediction_id}", response_model=ChronologyPredictionSchema)
