@@ -67,7 +67,8 @@ def read_features(path, f_type="vectors"):
     # path = "../data/chronology_prediction/" + f_type + "/"
     path = os.path.abspath(os.path.join(path, f_type))
 
-    subsets = ["train", "val", "test"]
+    subsets = ["train", "test"]
+    if f_type == "tensors": subsets.insert(1, "val")
     methods = ["tfidf", "bert", "cannyhog", "resnet", "vit"]
 
     X = {}
@@ -265,6 +266,16 @@ def update_scoreboard(scoreboard, new_entries):
     scoreboard = scoreboard.drop_duplicates(subset=["model", "target", "features"], keep="last")
     return scoreboard
 
+def save_scoreboard(scoreboard, path):
+    display(scoreboard)
+    scoreboard.to_csv(
+        path,
+        index=False,
+        encoding='utf-8',
+        sep=',',
+        header=True
+    )
+    print(f"\n\nSaved {len(scoreboard)} rows at {path}")
 
 # PLOT CROSS VALIDATION RESULTS
 
@@ -957,6 +968,8 @@ def plot_confusion_matrix_dual_cmap(cm, le, model_name, features):
     import seaborn as sns
     import matplotlib.pyplot as plt
 
+    print("\n")
+
     cm_norm = cm.astype("float") / cm.sum(axis=1, keepdims=True)
     cm_norm = np.nan_to_num(cm_norm)  # prevent NaN rows
 
@@ -1055,7 +1068,7 @@ def plot_pie(ax, values, label_prefixes, class_name, reverse=False):
 
     wedges, _, _ = ax.pie(
         values,
-        colors=["#4a90e2", "#e74c3c"],
+        colors=["tab:green", "tab:red"],
         startangle=90,
         autopct=autopct_with_counts(values),
         wedgeprops={"edgecolor": "white"}
@@ -1092,6 +1105,7 @@ def plot_cm_pies(cm, le):
 # Regression Models Init, Fit, Predict with Extra Info
 
 def initialize_model(model_class, params):
+    params = params["params"]
     if model_class == RandomForestRegressor:
         return model_class(**params)
     elif model_class == LGBMRegressor:
@@ -1193,6 +1207,30 @@ def get_chronology_table(y_true, y_pred):
 
     return chron_table
 
+
+def get_uncertainty_stats(results, verbose=True):
+    y_true = np.asarray(results["y_true"]).ravel()
+    y_pred = np.asarray(results["prediction"]).ravel()
+    ci_lower = np.asarray(results["CI_lower"]).ravel()
+    ci_upper = np.asarray(results["CI_upper"]).ravel()
+
+    uncertainty_stats = {
+        "coverage_95": float(np.mean((y_true >= ci_lower) & (y_true <= ci_upper))),
+        "ci_width": float(np.mean(ci_upper - ci_lower)),
+        "n_crossing": int(np.sum((ci_lower > y_pred) | (y_pred > ci_upper)))
+    }
+
+    if verbose:
+        print("\n\nUncertainty stats for test set predictions:")
+        display(uncertainty_stats)
+
+    return uncertainty_stats
+
+def scoreboard_entry(model_name, target, features, scores, uncertainty_stats=None):
+    entry = {"model": model_name, "target": target, "features": features, **scores}
+    if uncertainty_stats is not None:
+        entry = {**entry, **uncertainty_stats}
+    return pd.DataFrame([entry])
 
 # Regression Display and Plot Prediction Results
 

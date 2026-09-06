@@ -1,0 +1,4 @@
+model,target,features,accuracy,precision,recall,f1
+pottery_chronology_classifier_mlp,HistoricalPeriod,tfidf,0.8010471204188482,0.5772617213295179,0.529900277374191,0.5487448567943924
+pottery_chronology_classifier_mlp,HistoricalPeriod,vit,0.7172774869109948,0.5107741013071896,0.4124719323735306,0.4312414559125085
+pottery_chronology_classifier_mlp,HistoricalPeriod,tfidf + vit,0.7958115183246073,0.5249348109517601,0.5033813234711398,0.5126262626262625
