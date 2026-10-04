@@ -827,7 +827,7 @@ def plot_pivot_table(df, metric, models, features):
     ).reindex(index=models, columns=features)
 
     # Plot
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 5))
 
     cmap = "mako"
     if metric in metrics_r and metric != "r2": cmap += "_r"
@@ -839,10 +839,12 @@ def plot_pivot_table(df, metric, models, features):
     elif metric in metrics_r and metric != "r2":
         better_dir = "Lower"
     plt.title(
-        f"{metric.upper()} Pivot Table (Heatmap)" + f" | {better_dir} is Better" if better_dir else "" + f" | Target = {df['target'].values[0]}")
+        f"{metric.upper()} Pivot Table Heatmap" + (f" | {better_dir} is Better" if better_dir else "") + f" | Target = {df['target'].values[0]}")
 
     plt.xlabel("FEATURES")
     plt.ylabel("MODELS")
+    plt.xticks(rotation=45)
+    plt.yticks(rotation=0)
     plt.tight_layout()
     plt.show()
 
@@ -859,7 +861,7 @@ def plot_best_of_each(df, metric, group_elems, find_best, palette, lim=None, ste
 
     best_of_each = best_of_each.sort_values(metric, ascending=asc)
 
-    plt.figure(figsize=(10, 8))
+    plt.figure(figsize=(12, 5))
     ax = sns.barplot(
         data=best_of_each,
         x=metric,
@@ -869,8 +871,17 @@ def plot_best_of_each(df, metric, group_elems, find_best, palette, lim=None, ste
     )
 
     # Add model name as a label on top of each bar
-    for container, label in zip(ax.containers, best_of_each[find_best].unique()):
-        ax.bar_label(container, labels=[label] * len(container), fontsize=9, label_type='edge')
+    # for container, label in zip(ax.containers, best_of_each[find_best].unique()):
+    #     ax.bar_label(container, labels=[label] * len(container), fontsize=9, label_type='edge')
+
+    # Add the score as a label at the end of each bar
+    fmt = ".3f" if (metric in metrics_c or metric == "r2") else ".2f"
+    for container in ax.containers:
+        labels = [
+            f"{v:{fmt}}" if np.isfinite(v) and v != 0 else ""
+            for v in container.datavalues
+        ]
+        ax.bar_label(container, labels=labels, fontsize=9, label_type="edge", padding=3)
 
     if not lim: lim = np.max(best_of_each[metric])
     if not step:
@@ -881,7 +892,7 @@ def plot_best_of_each(df, metric, group_elems, find_best, palette, lim=None, ste
     plt.title(f"Best {find_best.upper()} per {group_elems.upper()} | Target = {df['target'].values[0]}")
     plt.xlabel(metric.upper())
     plt.ylabel(group_elems.upper())
-    plt.legend(title=find_best.upper())
+    plt.legend(title=find_best.upper(), loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
     plt.show()
 
