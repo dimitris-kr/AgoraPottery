@@ -55,6 +55,10 @@ metrics_c = {
 
 metric_params = {metric: {"average": "macro", "zero_division": 0} for metric in ["precision", "recall", "f1"]}
 
+CML_MODELS = [
+    "LogisticRegression", "KNN", "RandomForest", "LinearRegression", "Ridge", "Lasso", "XGBoost", "LightGBM",
+]
+
 
 # READ FEATURES
 
@@ -115,6 +119,7 @@ def read_targets(path, targets, f_type="df"):
     else:
         return None
 
+
 def read_target_tensors(path):
     subsets = ["train", "val", "test"]
     y = {}
@@ -125,6 +130,7 @@ def read_target_tensors(path):
             y[subset] = torch.load(file_path, weights_only=True)
             print(f"Loaded y_{subset}")
     return y
+
 
 # PRINT INFO
 
@@ -266,6 +272,7 @@ def update_scoreboard(scoreboard, new_entries):
     scoreboard = scoreboard.drop_duplicates(subset=["model", "target", "features"], keep="last")
     return scoreboard
 
+
 def save_scoreboard(scoreboard, path):
     display(scoreboard)
     scoreboard.to_csv(
@@ -276,6 +283,7 @@ def save_scoreboard(scoreboard, path):
         header=True
     )
     print(f"\n\nSaved {len(scoreboard)} rows at {path}")
+
 
 # PLOT CROSS VALIDATION RESULTS
 
@@ -1189,9 +1197,10 @@ def get_results_table(y_true, y_pred, y_std):
 def get_chronology(y, col_suffix=""):
     y = y.round(decimals=0)
     return pd.DataFrame({
-    f"start_year_{col_suffix}": y[:, 0],
-    f"end_year_{col_suffix}": np.sum(y, axis=1),
-})
+        f"start_year_{col_suffix}": y[:, 0],
+        f"end_year_{col_suffix}": np.sum(y, axis=1),
+    })
+
 
 def get_chronology_table(y_true, y_pred):
     chron_pred = get_chronology(y_pred, col_suffix="pred")
@@ -1199,10 +1208,10 @@ def get_chronology_table(y_true, y_pred):
 
     chron_table = pd.concat([chron_pred, chron_true], axis=1)
     chron_table["error"] = (
-        (
-            np.abs(chron_table["start_year_pred"] - chron_table["start_year_true"]) +
-            np.abs(chron_table["end_year_pred"] - chron_table["end_year_true"])
-        ) / 2.0
+            (
+                    np.abs(chron_table["start_year_pred"] - chron_table["start_year_true"]) +
+                    np.abs(chron_table["end_year_pred"] - chron_table["end_year_true"])
+            ) / 2.0
     )
 
     return chron_table
@@ -1226,11 +1235,13 @@ def get_uncertainty_stats(results, verbose=True):
 
     return uncertainty_stats
 
+
 def scoreboard_entry(model_name, target, features, scores, uncertainty_stats=None):
     entry = {"model": model_name, "target": target, "features": features, **scores}
     if uncertainty_stats is not None:
         entry = {**entry, **uncertainty_stats}
     return pd.DataFrame([entry])
+
 
 # Regression Display and Plot Prediction Results
 
@@ -1285,6 +1296,7 @@ def plot_true_vs_pred(result_tables):
     plt.grid(axis='x', linestyle='--', alpha=0.5)
     plt.tight_layout()
     plt.show()
+
 
 def plot_true_vs_pred_chronology(chron_tables):
     fig, axes = plt.subplots(
@@ -1765,5 +1777,3 @@ def plot_mlp_comparison(model_results, feature_colors, target_names):
 
 def get_model_path(dir, model_name, ft):
     return os.path.join(dir, f"{model_name}_{ft}.pt")
-
-
